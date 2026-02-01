@@ -1,13 +1,20 @@
 import React, { useRef, useEffect } from 'react';
-import { drawGrid, drawCells, drawLinks } from './drawUtils';
+import { drawGrid, drawCells, drawLinks, drawSelection } from './drawUtils';
 import { SudokuState } from '../../types/schema';
 
 interface SudokuBoardProps {
   data: SudokuState;
   size?: number;
+  selection?: { row: number; col: number } | null;
+  onCellClick?: (row: number, col: number) => void;
 }
 
-const SudokuBoard: React.FC<SudokuBoardProps> = ({ data, size = 600 }) => {
+const SudokuBoard: React.FC<SudokuBoardProps> = ({
+  data,
+  size = 600,
+  selection = null,
+  onCellClick,
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -35,19 +42,42 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({ data, size = 600 }) => {
     // 1. Draw Background & Cells
     drawCells(ctx, data.cells, cellSize);
 
-    // 2. Draw Grid Lines
+    // 2. Draw Selection (Under grid, or over cells?) -> Usually over cells, under grid or over grid.
+    // Let's draw it over everything for visibility
+    if (selection) {
+      drawSelection(ctx, selection.row, selection.col, cellSize);
+    }
+
+    // 3. Draw Grid Lines
     drawGrid(ctx, size, cellSize);
 
-    // 3. Draw Links (Overlay)
+    // 4. Draw Links (Overlay)
     if (data.links) {
       drawLinks(ctx, data.links, cellSize);
     }
-  }, [data, size]);
+  }, [data, size, selection]);
+
+  const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!onCellClick || !canvasRef.current) return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cellSize = size / 9;
+
+    const col = Math.floor(x / cellSize);
+    const row = Math.floor(y / cellSize);
+
+    if (row >= 0 && row < 9 && col >= 0 && col < 9) {
+      onCellClick(row, col);
+    }
+  };
 
   return (
     <canvas
       ref={canvasRef}
       className="sudoku-board"
+      onClick={handleClick}
       // Accessibility
       role="img"
       aria-label="Sudoku Board"

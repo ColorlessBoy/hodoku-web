@@ -93,6 +93,21 @@ export const drawCells = (
   });
 };
 
+export const drawSelection = (
+  ctx: CanvasRenderingContext2D,
+  row: number,
+  col: number,
+  cellSize: number
+) => {
+  const x = col * cellSize;
+  const y = row * cellSize;
+
+  ctx.strokeStyle = '#2196F3'; // Blue
+  ctx.lineWidth = 4;
+  ctx.strokeRect(x, y, cellSize, cellSize);
+};
+
+
 export const drawLinks = (
   ctx: CanvasRenderingContext2D,
   links: Link[] | undefined,

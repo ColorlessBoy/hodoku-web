@@ -31,7 +31,7 @@ afterEach(() => {
 test('renders sudoku board canvas', () => {
   render(<SudokuBoard data={sampleSudoku} size={600} />);
   const canvas = screen.getByRole('img', { name: /Sudoku Board/i });
-  expect(canvas).toBeInTheDocument();
+  expect(canvas).not.toBeNull();
 });
 
 test('calls getContext on mount', () => {

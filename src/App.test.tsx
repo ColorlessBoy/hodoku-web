@@ -10,5 +10,5 @@ vi.mock('./components/SudokuBoard/SudokuBoard', () => ({
 test('renders Hodoku Web title', () => {
   render(<App />);
   const titleElement = screen.getByText(/Hodoku Web Canvas Renderer/i);
-  expect(titleElement).toBeInTheDocument();
+expect(titleElement).not.toBeNull();
 });
