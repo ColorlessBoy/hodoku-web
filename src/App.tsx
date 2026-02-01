@@ -10,9 +10,9 @@ function App() {
         <SudokuBoard data={sampleSudoku} size={600} />
       </div>
       <p className="description">
-        Rendering Demo: Givens (Black), User Values (Blue), Candidates (Small), 
-        Cell Colors (Yellow Background), Candidate Colors (Red/Green), 
-        Links (Red Strong, Green Dashed Weak).
+        Rendering Demo: Givens (Black), User Values (Blue), Candidates (Small),
+        Cell Colors (Yellow Background), Candidate Colors (Red/Green), Links
+        (Red Strong, Green Dashed Weak).
       </p>
     </div>
   );
