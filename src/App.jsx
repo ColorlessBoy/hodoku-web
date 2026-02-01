@@ -1,35 +1,21 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import SudokuBoard from './components/SudokuBoard/SudokuBoard';
+import { sampleSudoku } from './data/sampleSudoku';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app-container">
+      <h1>Hodoku Web Canvas Renderer</h1>
+      <div className="board-container">
+        <SudokuBoard data={sampleSudoku} size={600} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
+      <p className="description">
+        Rendering Demo: Givens (Black), User Values (Blue), Candidates (Small), 
+        Cell Colors (Yellow Background), Candidate Colors (Red/Green), 
+        Links (Red Strong, Green Dashed Weak).
       </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;

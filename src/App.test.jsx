@@ -1,9 +1,14 @@
 import { render, screen } from '@testing-library/react';
-import { test, expect } from 'vitest';
+import { test, expect, vi } from 'vitest';
 import App from './App';
 
-test('renders Vite + React text', () => {
+// Mock SudokuBoard to avoid canvas issues in simple App test
+vi.mock('./components/SudokuBoard/SudokuBoard', () => ({
+  default: () => <div data-testid="mock-board">Board</div>
+}));
+
+test('renders Hodoku Web title', () => {
   render(<App />);
-  const linkElement = screen.getByText(/Vite \+ React/i);
-  expect(linkElement).toBeInTheDocument();
+  const titleElement = screen.getByText(/Hodoku Web Canvas Renderer/i);
+  expect(titleElement).toBeInTheDocument();
 });

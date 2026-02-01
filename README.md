@@ -46,7 +46,17 @@ npm run format
 - [x] 配置 ESLint 和 Prettier 代码规范
 - [x] 配置 Vitest 测试环境
 
-### Phase 2: 核心逻辑迁移 (Core Logic Migration)
+### Phase 2: UI 渲染层 (UI Rendering Layer) - **Current Focus**
+优先实现基于 Canvas 的高性能数独盘面渲染，采用 Schema 驱动的设计模式。
+- [ ] **Schema 设计**: 定义 `SudokuState` JSON 结构，包含盘面数据、候选数、颜色标记、强弱链等信息。
+- [ ] **Canvas 渲染器**: 实现 `SudokuBoard` 组件。
+  - 基础网格与数字渲染。
+  - 候选数 (Candidates) 与角注 (Notes) 渲染。
+  - 单元格与候选数染色 (Coloring)。
+  - 强弱链与逻辑连线 (Chains & Links) 绘制。
+- [ ] **交互基础**: 支持简单的点击选中、高亮等交互（纯渲染层）。
+
+### Phase 3: 核心逻辑迁移 (Core Logic Migration)
 Hodoku 的核心在于其强大的数独生成与解题算法。
 - **方案 A (推荐)**: 将 Java 核心逻辑重写为 TypeScript/JavaScript 模块。
   - 优点：更易维护，无跨语言调用开销。
@@ -61,19 +71,19 @@ Hodoku 的核心在于其强大的数独生成与解题算法。
 - `SudokuSolver` (解题器)
 - `HintSystem` (提示系统)
 
-### Phase 3: UI 组件开发 (UI Components)
+### Phase 4: UI 组件完善与集成 (UI Components & Integration)
 使用 React 组件重构 Swing 界面。
 - **GridComponent**: 数独盘面显示与交互。
 - **DigitPad**: 数字输入面板。
 - **Candidates**: 候选数显示与标记。
 - **Sidebar/Menu**: 游戏设置、难度选择、操作按钮。
 
-### Phase 4: 状态管理与应用集成 (State Management & Integration)
+### Phase 5: 状态管理与应用集成 (State Management & Integration)
 - 使用 React Context 或 Zustand/Redux 管理全局状态（当前盘面、历史记录、配置项）。
 - 实现撤销/重做 (Undo/Redo) 功能。
 - 实现游戏存档 (Local Storage)。
 
-### Phase 5: 优化与发布 (Optimization & Deployment)
+### Phase 6: 优化与发布 (Optimization & Deployment)
 - 性能优化 (Web Workers 处理耗时计算)。
 - 响应式设计 (适配移动端)。
 - PWA 支持 (离线访问)。
