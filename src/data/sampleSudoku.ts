@@ -63,7 +63,11 @@ cells[2 * 9 + 0].value = 2; // r2c0
 
 // 3. Set candidates
 const idxWithCandidates = 0 * 9 + 2; // r0c2
-cells[idxWithCandidates].candidates = [1, 2, 4];
+cells[idxWithCandidates].candidates = [
+  { value: 1, background: '#ff0000' },
+  { value: 2 },
+  { value: 4 },
+];
 
 // 4. Color a cell background (e.g., highlighting a focused house or logic)
 if (!cells[4 * 9 + 4].colors) cells[4 * 9 + 4].colors = {};
@@ -71,12 +75,10 @@ cells[4 * 9 + 4].colors!.background = 'rgba(255, 255, 0, 0.3)'; // Center cell y
 
 // 5. Color specific candidates (e.g., coloring for Chains)
 const cellChain1 = cells[0 * 9 + 8]; // r0c8
-cellChain1.candidates = [1, 4];
-cellChain1.colors = { candidates: { 1: '#ff0000', 4: '#00ff00' } }; // 1 is Red, 4 is Green
+cellChain1.candidates = [{ value: 1, color: '#ff0000' }, { value: 4, color: '#00ff00' }];
 
 const cellChain2 = cells[8 * 9 + 0]; // r8c0
-cellChain2.candidates = [1, 5];
-cellChain2.colors = { candidates: { 1: '#ff0000' } };
+cellChain2.candidates = [{ value: 1, color: '#ff0000' }, { value: 5, color: '#00ff00' }];
 
 // 6. Add Links (AIC or Strong/Weak links)
 const links: Link[] = [

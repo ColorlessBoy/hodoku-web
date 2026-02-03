@@ -6,12 +6,13 @@ export const drawGrid = (
   cellSize: number
 ) => {
   ctx.strokeStyle = '#000';
-  ctx.beginPath();
 
+  // 1. Draw Thin Lines (Sub-grid lines)
+  ctx.lineWidth = 1;
+  ctx.beginPath();
   for (let i = 0; i <= 9; i++) {
-    const pos = i * cellSize;
-    // 每3条线加粗
-    ctx.lineWidth = i % 3 === 0 ? 3 : 1;
+    if (i % 3 === 0) continue; // Skip block boundaries
+    const pos = Math.floor(i * cellSize) + 0.5; // Pixel perfect alignment
 
     // Horizontal
     ctx.moveTo(0, pos);
@@ -21,7 +22,29 @@ export const drawGrid = (
     ctx.moveTo(pos, 0);
     ctx.lineTo(pos, size);
   }
+  ctx.stroke();
 
+  // 2. Draw Thick Lines (Block boundaries)
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  for (let i = 0; i <= 9; i++) {
+    if (i % 3 !== 0) continue; // Skip non-block boundaries
+    const pos = Math.floor(i * cellSize);
+
+    // Horizontal
+    ctx.moveTo(0, pos);
+    ctx.lineTo(size, pos);
+
+    // Vertical
+    ctx.moveTo(pos, 0);
+    ctx.lineTo(pos, size);
+  }
+  ctx.stroke();
+
+  // 3. Draw Thick Rect (Grid boundaries)
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.strokeRect(0, 0, size, size);
   ctx.stroke();
 };
 
@@ -32,7 +55,7 @@ const drawCandidates = (
   y: number,
   cellSize: number
 ) => {
-  const fontSize = cellSize / 3.5;
+  const fontSize = cellSize / 4;
   ctx.font = `${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -41,19 +64,39 @@ const drawCandidates = (
   // 1 2 3
   // 4 5 6
   // 7 8 9
-  cell.candidates?.forEach((digit) => {
-    const r = Math.floor((digit - 1) / 3);
-    const c = (digit - 1) % 3;
+  cell.candidates?.forEach((cand) => {
+    const r = Math.floor((cand.value - 1) / 3);
+    const c = (cand.value - 1) % 3;
 
     const cx = x + (c + 0.5) * (cellSize / 3);
     const cy = y + (r + 0.5) * (cellSize / 3);
 
-    ctx.fillStyle = '#666'; // Default candidate color
-    if (cell.colors?.candidates?.[digit]) {
-      ctx.fillStyle = cell.colors.candidates[digit];
+    if (cand.background) {
+      ctx.fillStyle = cand.background;
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      const padding = 2;
+      const rectSize = cellSize / 3 - padding * 2;
+      const rectX = cx - cellSize / 6 + padding;
+      const rectY = cy - cellSize / 6 + padding;
+
+      ctx.fillRect(rectX, rectY, rectSize, rectSize);
+      ctx.strokeRect(rectX, rectY, rectSize, rectSize);
     }
 
-    ctx.fillText(digit.toString(), cx, cy + 1);
+    ctx.fillStyle = '#111'; // Default candidate color
+    if (cand.color) {
+      ctx.fillStyle = cand.color;
+    }
+
+    if (cand.background) {
+      // 文字添加白边
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#fff';
+      ctx.strokeText(cand.value.toString(), cx, cy);
+    }
+
+    ctx.fillText(cand.value.toString(), cx, cy);
   });
 };
 
@@ -102,9 +145,9 @@ export const drawSelection = (
   const x = col * cellSize;
   const y = row * cellSize;
 
-  ctx.strokeStyle = '#2196F3'; // Blue
+  ctx.strokeStyle = '#1176E3'; // Blue
   ctx.lineWidth = 4;
-  ctx.strokeRect(x, y, cellSize, cellSize);
+  ctx.strokeRect(x+ctx.lineWidth/2, y+ctx.lineWidth/2, cellSize-ctx.lineWidth/2, cellSize-ctx.lineWidth/2);
 };
 
 

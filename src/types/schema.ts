@@ -3,8 +3,15 @@ export interface CellColor {
   background?: string;
   /** 数字颜色 */
   digit?: string;
-  /** 特定候选数的颜色 { candidate: color } */
-  candidates?: Record<number, string>;
+}
+
+export interface Candidate {
+  /** 候选数 */
+  value: number;
+  /** 颜色 */
+  color?: string;
+  /** 背景颜色 */
+  background?: string;
 }
 
 export interface Cell {
@@ -17,7 +24,7 @@ export interface Cell {
   /** 是否为初始题面数字 (不可修改) */
   isGiven?: boolean;
   /** 候选数列表 */
-  candidates?: number[];
+  candidates?: Candidate[];
   /** 单元格相关的颜色配置 */
   colors?: CellColor;
 }

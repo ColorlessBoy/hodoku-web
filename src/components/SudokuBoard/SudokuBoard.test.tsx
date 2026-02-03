@@ -14,6 +14,8 @@ const getContextMock = vi.fn().mockReturnValue({
   fillText: vi.fn(),
   scale: vi.fn(),
   setLineDash: vi.fn(),
+  strokeRect: vi.fn(),
+  strokeText: vi.fn(),
 });
 
 let getContextSpy: MockInstance;

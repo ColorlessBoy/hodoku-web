@@ -42,18 +42,17 @@ const SudokuBoard: React.FC<SudokuBoardProps> = ({
     // 1. Draw Background & Cells
     drawCells(ctx, data.cells, cellSize);
 
-    // 2. Draw Selection (Under grid, or over cells?) -> Usually over cells, under grid or over grid.
-    // Let's draw it over everything for visibility
-    if (selection) {
-      drawSelection(ctx, selection.row, selection.col, cellSize);
-    }
-
     // 3. Draw Grid Lines
     drawGrid(ctx, size, cellSize);
 
     // 4. Draw Links (Overlay)
     if (data.links) {
       drawLinks(ctx, data.links, cellSize);
+    }
+
+    // 5. Draw Selection (Topmost)
+    if (selection) {
+      drawSelection(ctx, selection.row, selection.col, cellSize);
     }
   }, [data, size, selection]);
 
