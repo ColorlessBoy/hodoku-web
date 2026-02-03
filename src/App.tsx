@@ -78,7 +78,6 @@ function App() {
 
   return (
     <div className="app-container">
-      <h1>Hodoku Web Canvas Renderer</h1>
       <div className="board-container">
         <SudokuBoard
           data={sudokuData}
@@ -90,11 +89,6 @@ function App() {
       <p className="description">
         <strong>Interaction Demo:</strong> Click to select a cell. Use Arrow keys
         to move. Type 1-9 to fill a number. Use Backspace/Delete to clear.
-      </p>
-      <p className="description" style={{ fontSize: '0.9em', color: '#666' }}>
-        Rendering Demo: Givens (Black), User Values (Blue), Candidates (Small),
-        Cell Colors (Yellow Background), Candidate Colors (Red/Green), Links
-        (Red Strong, Green Dashed Weak).
       </p>
     </div>
   );
