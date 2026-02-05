@@ -1,68 +1,215 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+/* Sudoku App Design System */
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
+@layer base {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.5rem;
+
+    /* Sudoku specific colors */
+    --sudoku-grid-bg: 0 0% 100%;
+    --sudoku-cell-bg: 0 0% 100%;
+    --sudoku-cell-hover: 217 91% 97%;
+    --sudoku-cell-selected: 217 91% 92%;
+    --sudoku-cell-highlighted: 217 91% 95%;
+    --sudoku-cell-same-value: 217 71% 88%;
+    --sudoku-cell-same-row-col-box: 220 14% 96%;
+    
+    --sudoku-border-thin: 220 13% 85%;
+    --sudoku-border-thick: 222 47% 30%;
+    
+    --sudoku-given: 222 47% 11%;
+    --sudoku-filled: 217 91% 45%;
+    --sudoku-error: 0 84% 60%;
+    --sudoku-error-bg: 0 84% 95%;
+    
+    /* Cell coloring palette */
+    --sudoku-color-1: 217 91% 85%;
+    --sudoku-color-2: 142 71% 85%;
+    --sudoku-color-3: 45 93% 85%;
+    --sudoku-color-4: 0 84% 88%;
+    --sudoku-color-5: 280 68% 88%;
+    --sudoku-color-6: 180 58% 85%;
+    --sudoku-color-7: 32 95% 85%;
+    --sudoku-color-8: 330 81% 88%;
+    
+    /* Candidate coloring */
+    --sudoku-candidate-color-1: 217 91% 50%;
+    --sudoku-candidate-color-2: 142 71% 45%;
+    --sudoku-candidate-color-3: 45 93% 50%;
+    --sudoku-candidate-color-4: 0 84% 55%;
+    --sudoku-candidate-color-5: 280 68% 55%;
+    --sudoku-candidate-color-6: 180 58% 45%;
+    
+    /* Links */
+    --sudoku-link-strong: 142 71% 45%;
+    --sudoku-link-weak: 0 84% 55%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  a:hover {
-    color: #747bff;
+
+  .dark {
+    --background: 222 47% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 212 27% 84%;
+
+    /* Sudoku dark mode */
+    --sudoku-grid-bg: 222 47% 13%;
+    --sudoku-cell-bg: 222 47% 13%;
+    --sudoku-cell-hover: 217 50% 20%;
+    --sudoku-cell-selected: 217 60% 25%;
+    --sudoku-cell-highlighted: 217 50% 18%;
+    --sudoku-cell-same-value: 217 50% 22%;
+    --sudoku-cell-same-row-col-box: 222 40% 15%;
+    
+    --sudoku-border-thin: 217 33% 25%;
+    --sudoku-border-thick: 210 40% 70%;
+    
+    --sudoku-given: 210 40% 98%;
+    --sudoku-filled: 217 91% 70%;
+    --sudoku-error: 0 84% 65%;
+    --sudoku-error-bg: 0 50% 20%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
-  button {
-    background-color: #f9f9f9;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer components {
+  .sudoku-cell {
+    @apply relative flex items-center justify-center;
+    @apply transition-colors duration-150;
+    @apply cursor-pointer select-none;
+    @apply bg-sudoku-cell hover:bg-sudoku-cell-hover;
+  }
+
+  .sudoku-cell-selected {
+    @apply bg-sudoku-cell-selected;
+  }
+
+  .sudoku-cell-highlighted {
+    @apply bg-sudoku-cell-highlighted;
+  }
+
+  .sudoku-cell-same-value {
+    @apply bg-sudoku-cell-same-value;
+  }
+
+  .sudoku-cell-related {
+    @apply bg-sudoku-cell-related;
+  }
+
+  .sudoku-cell-error {
+    @apply bg-sudoku-error-bg;
+  }
+
+  .sudoku-value-given {
+    @apply text-sudoku-given font-semibold;
+  }
+
+  .sudoku-value-filled {
+    @apply text-sudoku-filled font-medium;
+  }
+
+  .sudoku-value-error {
+    @apply text-sudoku-error;
+  }
+
+  .sudoku-link-strong {
+    stroke: hsl(var(--sudoku-link-strong));
+    stroke-width: 3;
+  }
+
+  .sudoku-link-weak {
+    stroke: hsl(var(--sudoku-link-weak));
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+  }
+}
+
+@layer utilities {
+  .sudoku-grid-shadow {
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -2px rgba(0, 0, 0, 0.1),
+      0 0 0 1px hsl(var(--sudoku-border-thick));
   }
 }
