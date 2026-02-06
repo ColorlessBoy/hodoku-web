@@ -90,9 +90,7 @@ export const NumberPad: React.FC<NumberPadProps> = ({
         </button>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
-        双击数字高亮所有相同数字
-      </p>
+      <p className="text-xs text-muted-foreground text-center">双击数字高亮所有相同数字</p>
     </div>
   );
 };

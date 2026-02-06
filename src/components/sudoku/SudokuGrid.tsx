@@ -1,6 +1,6 @@
- import React from 'react';
+import React from 'react';
 import { SudokuRenderSchema, CellPosition, Digit } from '@/types/sudoku';
- import { SudokuCanvas } from './SudokuCanvas';
+import { SudokuCanvas } from './SudokuCanvas';
 
 interface SudokuGridProps {
   schema: SudokuRenderSchema;
@@ -16,11 +16,11 @@ export const SudokuGrid: React.FC<SudokuGridProps> = ({
   size = 450,
 }) => {
   return (
-     <SudokuCanvas
-       schema={schema}
-       onCellClick={onCellClick}
-       onCandidateClick={onCandidateClick}
-       size={size}
-     />
+    <SudokuCanvas
+      schema={schema}
+      onCellClick={onCellClick}
+      onCandidateClick={onCandidateClick}
+      size={size}
+    />
   );
 };

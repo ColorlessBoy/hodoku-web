@@ -126,12 +126,10 @@ export const ColorPalette: React.FC<ColorPaletteProps> = ({
           </button>
         </div>
       )}
-      
+
       {/* 候选数染色提示 */}
       {activeTab === 'candidate' && selectedCandidateColor && (
-        <p className="text-xs text-muted-foreground">
-          点击盘面上的候选数进行染色
-        </p>
+        <p className="text-xs text-muted-foreground">点击盘面上的候选数进行染色</p>
       )}
     </div>
   );

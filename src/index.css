@@ -44,15 +44,15 @@
     --sudoku-cell-highlighted: 217 91% 95%;
     --sudoku-cell-same-value: 217 71% 88%;
     --sudoku-cell-same-row-col-box: 220 14% 96%;
-    
+
     --sudoku-border-thin: 220 13% 85%;
     --sudoku-border-thick: 222 47% 30%;
-    
+
     --sudoku-given: 222 47% 11%;
     --sudoku-filled: 217 91% 45%;
     --sudoku-error: 0 84% 60%;
     --sudoku-error-bg: 0 84% 95%;
-    
+
     /* Cell coloring palette */
     --sudoku-color-1: 217 91% 85%;
     --sudoku-color-2: 142 71% 85%;
@@ -62,7 +62,7 @@
     --sudoku-color-6: 180 58% 85%;
     --sudoku-color-7: 32 95% 85%;
     --sudoku-color-8: 330 81% 88%;
-    
+
     /* Candidate coloring */
     --sudoku-candidate-color-1: 217 91% 50%;
     --sudoku-candidate-color-2: 142 71% 45%;
@@ -70,7 +70,7 @@
     --sudoku-candidate-color-4: 0 84% 55%;
     --sudoku-candidate-color-5: 280 68% 55%;
     --sudoku-candidate-color-6: 180 58% 45%;
-    
+
     /* Links */
     --sudoku-link-strong: 142 71% 45%;
     --sudoku-link-weak: 0 84% 55%;
@@ -122,10 +122,10 @@
     --sudoku-cell-highlighted: 217 50% 18%;
     --sudoku-cell-same-value: 217 50% 22%;
     --sudoku-cell-same-row-col-box: 222 40% 15%;
-    
+
     --sudoku-border-thin: 217 33% 25%;
     --sudoku-border-thick: 210 40% 70%;
-    
+
     --sudoku-given: 210 40% 98%;
     --sudoku-filled: 217 91% 70%;
     --sudoku-error: 0 84% 65%;
@@ -149,7 +149,11 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family:
+      'Inter',
+      system-ui,
+      -apple-system,
+      sans-serif;
   }
 }
 
@@ -207,7 +211,7 @@
 
 @layer utilities {
   .sudoku-grid-shadow {
-    box-shadow: 
+    box-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.1),
       0 2px 4px -2px rgba(0, 0, 0, 0.1),
       0 0 0 1px hsl(var(--sudoku-border-thick));

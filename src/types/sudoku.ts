@@ -19,18 +19,18 @@ export interface CellRenderState {
   // 值相关
   value: Digit | null;
   isGiven: boolean; // 是否是题目给定的数字
-  
+
   // 候选数相关
   centerCandidates: CandidateInfo[]; // 中心候选数
   cornerCandidates: CandidateInfo[]; // 角注候选数
-  
+
   // 高亮和颜色
   backgroundColor?: CellColor; // 单元格背景色
   isSelected?: boolean; // 是否被选中
   isHighlighted?: boolean; // 是否高亮
   isSameValue?: boolean; // 是否与选中格相同值
   isRelated?: boolean; // 是否与选中格同行/列/宫
-  
+
   // 错误状态
   hasConflict?: boolean; // 是否有冲突
   conflictWith?: CellPosition[]; // 冲突的单元格位置
@@ -51,14 +51,14 @@ export interface ChainLink {
 export interface SudokuRenderSchema {
   // 81个格子的渲染状态
   cells: CellRenderState[][];
-  
+
   // 链（强弱链可视化）
   links: ChainLink[];
-  
+
   // 全局状态
   selectedCell: CellPosition | null;
   highlightedDigit: Digit | null;
-  
+
   // 显示选项
   showConflicts: boolean;
   showRelatedCells: boolean;
@@ -68,32 +68,36 @@ export interface SudokuRenderSchema {
 // 工具函数类型
 export type CellIndex = `${number}-${number}`;
 
-export const getCellIndex = (row: number, col: number): CellIndex => 
-  `${row}-${col}`;
+export const getCellIndex = (row: number, col: number): CellIndex => `${row}-${col}`;
 
 export const parseCellIndex = (index: CellIndex): CellPosition => {
   const [row, col] = index.split('-').map(Number);
   return { row, col };
 };
 
-export const getBoxIndex = (row: number, col: number): number => 
+export const getBoxIndex = (row: number, col: number): number =>
   Math.floor(row / 3) * 3 + Math.floor(col / 3);
 
 export const areInSameUnit = (pos1: CellPosition, pos2: CellPosition): boolean => {
-  return pos1.row === pos2.row || 
-         pos1.col === pos2.col || 
-         getBoxIndex(pos1.row, pos1.col) === getBoxIndex(pos2.row, pos2.col);
+  return (
+    pos1.row === pos2.row ||
+    pos1.col === pos2.col ||
+    getBoxIndex(pos1.row, pos1.col) === getBoxIndex(pos2.row, pos2.col)
+  );
 };
 
 // 创建空的渲染状态
 export const createEmptyRenderSchema = (): SudokuRenderSchema => ({
   cells: Array.from({ length: 9 }, () =>
-    Array.from({ length: 9 }, (): CellRenderState => ({
-      value: null,
-      isGiven: false,
-      centerCandidates: [],
-      cornerCandidates: [],
-    }))
+    Array.from(
+      { length: 9 },
+      (): CellRenderState => ({
+        value: null,
+        isGiven: false,
+        centerCandidates: [],
+        cornerCandidates: [],
+      })
+    )
   ),
   links: [],
   selectedCell: null,

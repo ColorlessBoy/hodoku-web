@@ -29,12 +29,7 @@ const candidateColorClasses: Record<number, string> = {
   6: 'text-sudoku-candidate-6',
 };
 
-export const SudokuCell: React.FC<SudokuCellProps> = ({
-  cell,
-  position,
-  onClick,
-  cellSize,
-}) => {
+export const SudokuCell: React.FC<SudokuCellProps> = ({ cell, position, onClick, cellSize }) => {
   const handleClick = () => onClick(position);
 
   // 计算边框样式
@@ -46,7 +41,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = ({
     (position.row + 1) % 3 === 0 && position.row !== 8 && 'border-b-2 border-b-sudoku-border-thick',
     // 常规边框
     position.col !== 8 && !((position.col + 1) % 3 === 0) && 'border-r',
-    position.row !== 8 && !((position.row + 1) % 3 === 0) && 'border-b',
+    position.row !== 8 && !((position.row + 1) % 3 === 0) && 'border-b'
   );
 
   // 计算背景色优先级
@@ -69,7 +64,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = ({
         className={cn(
           'text-center font-medium transition-all',
           cell.isGiven ? 'text-sudoku-given font-semibold' : 'text-sudoku-filled',
-          cell.hasConflict && 'text-sudoku-error animate-error-shake',
+          cell.hasConflict && 'text-sudoku-error animate-error-shake'
         )}
         style={{ fontSize: cellSize * 0.55 }}
       >
@@ -83,14 +78,14 @@ export const SudokuCell: React.FC<SudokuCellProps> = ({
     if (cell.value || cell.cornerCandidates.length === 0) return null;
 
     const positions = [
-      'top-0.5 left-1',      // 左上
-      'top-0.5 right-1',     // 右上
-      'bottom-0.5 left-1',   // 左下
-      'bottom-0.5 right-1',  // 右下
-      'top-0.5 left-1/2 -translate-x-1/2',     // 上中
-      'bottom-0.5 left-1/2 -translate-x-1/2',  // 下中
-      'top-1/2 left-1 -translate-y-1/2',       // 左中
-      'top-1/2 right-1 -translate-y-1/2',      // 右中
+      'top-0.5 left-1', // 左上
+      'top-0.5 right-1', // 右上
+      'bottom-0.5 left-1', // 左下
+      'bottom-0.5 right-1', // 右下
+      'top-0.5 left-1/2 -translate-x-1/2', // 上中
+      'bottom-0.5 left-1/2 -translate-x-1/2', // 下中
+      'top-1/2 left-1 -translate-y-1/2', // 左中
+      'top-1/2 right-1 -translate-y-1/2', // 右中
       'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2', // 中心
     ];
 
@@ -101,7 +96,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = ({
           'absolute font-medium',
           positions[index],
           candidate.color ? candidateColorClasses[candidate.color] : 'text-muted-foreground',
-          candidate.eliminated && 'line-through opacity-50',
+          candidate.eliminated && 'line-through opacity-50'
         )}
         style={{ fontSize: cellSize * 0.22 }}
       >
@@ -125,7 +120,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = ({
             className={cn(
               'font-medium leading-none',
               candidate.color ? candidateColorClasses[candidate.color] : 'text-muted-foreground',
-              candidate.eliminated && 'line-through opacity-50',
+              candidate.eliminated && 'line-through opacity-50'
             )}
           >
             {candidate.digit}
@@ -140,7 +135,7 @@ export const SudokuCell: React.FC<SudokuCellProps> = ({
       className={cn(
         'relative flex items-center justify-center cursor-pointer select-none transition-colors duration-100',
         borderClasses,
-        getBackgroundClass(),
+        getBackgroundClass()
       )}
       style={{
         width: cellSize,

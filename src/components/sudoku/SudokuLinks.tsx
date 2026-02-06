@@ -7,11 +7,7 @@ interface SudokuLinksProps {
   gridOffset: { x: number; y: number };
 }
 
-export const SudokuLinks: React.FC<SudokuLinksProps> = ({
-  links,
-  cellSize,
-  gridOffset,
-}) => {
+export const SudokuLinks: React.FC<SudokuLinksProps> = ({ links, cellSize, gridOffset }) => {
   if (links.length === 0) return null;
 
   const getCellCenter = (row: number, col: number, candidate?: number) => {
@@ -54,10 +50,7 @@ export const SudokuLinks: React.FC<SudokuLinksProps> = ({
           refY="3.5"
           orient="auto"
         >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill="hsl(var(--sudoku-link-strong))"
-          />
+          <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--sudoku-link-strong))" />
         </marker>
         {/* 弱链箭头 */}
         <marker
@@ -68,10 +61,7 @@ export const SudokuLinks: React.FC<SudokuLinksProps> = ({
           refY="3.5"
           orient="auto"
         >
-          <polygon
-            points="0 0, 10 3.5, 0 7"
-            fill="hsl(var(--sudoku-link-weak))"
-          />
+          <polygon points="0 0, 10 3.5, 0 7" fill="hsl(var(--sudoku-link-weak))" />
         </marker>
       </defs>
 
@@ -81,11 +71,7 @@ export const SudokuLinks: React.FC<SudokuLinksProps> = ({
           link.from.position.col,
           link.from.candidate
         );
-        const to = getCellCenter(
-          link.to.position.row,
-          link.to.position.col,
-          link.to.candidate
-        );
+        const to = getCellCenter(link.to.position.row, link.to.position.col, link.to.candidate);
 
         return (
           <line

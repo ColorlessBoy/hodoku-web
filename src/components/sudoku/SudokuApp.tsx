@@ -30,45 +30,54 @@ export const SudokuApp: React.FC = () => {
   const [selectedCandidateColor, setSelectedCandidateColor] = useState<CandidateColor>(null);
 
   // 处理格子点击
-  const handleCellClick = useCallback((position: CellPosition) => {
-    selectCell(position);
-  }, [selectCell]);
-  
-  // 处理候选数点击（用于染色）
-  const handleCandidateClick = useCallback((position: CellPosition, digit: Digit) => {
-    if (colorTab === 'candidate' && selectedCandidateColor !== null) {
-      // 检查是角注还是中心候选数
-      const cell = schema.cells[position.row][position.col];
-      const isCorner = cell.cornerCandidates.some(c => c.digit === digit);
-      const isCenter = cell.centerCandidates.some(c => c.digit === digit);
-      
-      if (isCorner) {
-        setCandidateColor(position, digit, selectedCandidateColor, true);
-      } else if (isCenter) {
-        setCandidateColor(position, digit, selectedCandidateColor, false);
-      }
-    } else {
-      // 非染色模式时，点击候选数等同于点击格子
+  const handleCellClick = useCallback(
+    (position: CellPosition) => {
       selectCell(position);
-    }
-  }, [colorTab, selectedCandidateColor, schema.cells, setCandidateColor, selectCell]);
+    },
+    [selectCell]
+  );
+
+  // 处理候选数点击（用于染色）
+  const handleCandidateClick = useCallback(
+    (position: CellPosition, digit: Digit) => {
+      if (colorTab === 'candidate' && selectedCandidateColor !== null) {
+        // 检查是角注还是中心候选数
+        const cell = schema.cells[position.row][position.col];
+        const isCorner = cell.cornerCandidates.some((c) => c.digit === digit);
+        const isCenter = cell.centerCandidates.some((c) => c.digit === digit);
+
+        if (isCorner) {
+          setCandidateColor(position, digit, selectedCandidateColor, true);
+        } else if (isCenter) {
+          setCandidateColor(position, digit, selectedCandidateColor, false);
+        }
+      } else {
+        // 非染色模式时，点击候选数等同于点击格子
+        selectCell(position);
+      }
+    },
+    [colorTab, selectedCandidateColor, schema.cells, setCandidateColor, selectCell]
+  );
 
   // 处理数字输入
-  const handleNumberClick = useCallback((digit: Digit) => {
-    if (!schema.selectedCell) return;
+  const handleNumberClick = useCallback(
+    (digit: Digit) => {
+      if (!schema.selectedCell) return;
 
-    switch (inputMode) {
-      case 'normal':
-        setCellValue(schema.selectedCell, digit);
-        break;
-      case 'corner':
-        toggleCornerCandidate(schema.selectedCell, digit);
-        break;
-      case 'center':
-        toggleCenterCandidate(schema.selectedCell, digit);
-        break;
-    }
-  }, [schema.selectedCell, inputMode, setCellValue, toggleCornerCandidate, toggleCenterCandidate]);
+      switch (inputMode) {
+        case 'normal':
+          setCellValue(schema.selectedCell, digit);
+          break;
+        case 'corner':
+          toggleCornerCandidate(schema.selectedCell, digit);
+          break;
+        case 'center':
+          toggleCenterCandidate(schema.selectedCell, digit);
+          break;
+      }
+    },
+    [schema.selectedCell, inputMode, setCellValue, toggleCornerCandidate, toggleCenterCandidate]
+  );
 
   // 处理清除
   const handleClear = useCallback(() => {
@@ -77,10 +86,13 @@ export const SudokuApp: React.FC = () => {
   }, [schema.selectedCell, clearCell]);
 
   // 处理单元格颜色
-  const handleCellColorSelect = useCallback((color: CellColor) => {
-    if (!schema.selectedCell) return;
-    setCellColor(schema.selectedCell, color);
-  }, [schema.selectedCell, setCellColor]);
+  const handleCellColorSelect = useCallback(
+    (color: CellColor) => {
+      if (!schema.selectedCell) return;
+      setCellColor(schema.selectedCell, color);
+    },
+    [schema.selectedCell, setCellColor]
+  );
 
   // 处理候选数颜色选择（切换当前选中的颜色）
   const handleCandidateColorChange = useCallback((color: CandidateColor) => {
@@ -103,7 +115,10 @@ export const SudokuApp: React.FC = () => {
       }
 
       // 方向键移动
-      if (schema.selectedCell && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+      if (
+        schema.selectedCell &&
+        ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)
+      ) {
         e.preventDefault();
         const { row, col } = schema.selectedCell;
         let newRow = row;
@@ -178,7 +193,7 @@ export const SudokuApp: React.FC = () => {
             onCandidateClick={handleCandidateClick}
             size={Math.min(450, window.innerWidth - 32)}
           />
-          
+
           {/* 链条控制 */}
           <div className="flex gap-2 justify-center">
             <button

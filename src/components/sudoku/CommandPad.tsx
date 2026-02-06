@@ -1,5 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { SudokuRenderSchema, CellPosition, Digit, CandidateColor, CellColor, ChainLink } from '@/types/sudoku';
+import {
+  SudokuRenderSchema,
+  CellPosition,
+  Digit,
+  CandidateColor,
+  CellColor,
+  ChainLink,
+} from '@/types/sudoku';
 import { cn } from '@/lib/utils';
 
 interface CommandPadProps {
@@ -9,7 +16,12 @@ interface CommandPadProps {
   toggleCornerCandidate: (position: CellPosition, digit: Digit) => void;
   toggleCenterCandidate: (position: CellPosition, digit: Digit) => void;
   setCellColor: (position: CellPosition, color: CellColor) => void;
-  setCandidateColor: (position: CellPosition, digit: Digit, color: CandidateColor, isCorner: boolean) => void;
+  setCandidateColor: (
+    position: CellPosition,
+    digit: Digit,
+    color: CandidateColor,
+    isCorner: boolean
+  ) => void;
   setHighlightedDigit: (digit: Digit | null) => void;
   addLink: (link: ChainLink) => void;
   clearLinks: () => void;
@@ -55,7 +67,9 @@ const useLocalStore = <T,>(key: string, initial: T) => {
   useEffect(() => {
     try {
       localStorage.setItem(key, JSON.stringify(state));
-    } catch { void 0; }
+    } catch {
+      void 0;
+    }
   }, [key, state]);
   return [state, setState] as const;
 };
@@ -88,29 +102,39 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       try {
         const snap = JSON.parse(raw) as SudokuRenderSchema;
         replaceSchema(snap);
-      } catch { void 0; }
+      } catch {
+        void 0;
+      }
     }
   }, [replaceSchema]);
 
   useEffect(() => {
     try {
       localStorage.setItem('sudoku_last_schema', JSON.stringify(schema));
-    } catch { void 0; }
+    } catch {
+      void 0;
+    }
   }, [schema]);
 
   const pushUndo = useCallback(() => {
-    const snap = typeof structuredClone === 'function' ? structuredClone(schema) : JSON.parse(JSON.stringify(schema));
-    setUndoStack(prev => [...prev, snap]);
+    const snap =
+      typeof structuredClone === 'function'
+        ? structuredClone(schema)
+        : JSON.parse(JSON.stringify(schema));
+    setUndoStack((prev) => [...prev, snap]);
     setRedoStack([]);
   }, [schema, setUndoStack, setRedoStack]);
 
   const doUndo = useCallback(() => {
-    setUndoStack(prev => {
+    setUndoStack((prev) => {
       if (prev.length === 0) return prev;
       const nextUndo = [...prev];
       const last = nextUndo.pop()!;
-      setRedoStack(rp => {
-        const cur = typeof structuredClone === 'function' ? structuredClone(schema) : JSON.parse(JSON.stringify(schema));
+      setRedoStack((rp) => {
+        const cur =
+          typeof structuredClone === 'function'
+            ? structuredClone(schema)
+            : JSON.parse(JSON.stringify(schema));
         return [...rp, cur];
       });
       replaceSchema(last);
@@ -119,12 +143,15 @@ export const CommandPad: React.FC<CommandPadProps> = ({
   }, [schema, replaceSchema, setUndoStack, setRedoStack]);
 
   const doRedo = useCallback(() => {
-    setRedoStack(prev => {
+    setRedoStack((prev) => {
       if (prev.length === 0) return prev;
       const nextRedo = [...prev];
       const last = nextRedo.pop()!;
-      setUndoStack(up => {
-        const cur = typeof structuredClone === 'function' ? structuredClone(schema) : JSON.parse(JSON.stringify(schema));
+      setUndoStack((up) => {
+        const cur =
+          typeof structuredClone === 'function'
+            ? structuredClone(schema)
+            : JSON.parse(JSON.stringify(schema));
         return [...up, cur];
       });
       replaceSchema(last);
@@ -132,161 +159,167 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     });
   }, [schema, replaceSchema, setUndoStack, setRedoStack]);
 
-  const addHistory = useCallback((cmd: string) => {
-    setHistory(prev => {
-      const list = [...prev];
-      if (list[list.length - 1] !== cmd) list.push(cmd);
-      return list.slice(-200);
-    });
-    setHistoryIdx(-1);
-  }, [setHistory]);
+  const addHistory = useCallback(
+    (cmd: string) => {
+      setHistory((prev) => {
+        const list = [...prev];
+        if (list[list.length - 1] !== cmd) list.push(cmd);
+        return list.slice(-200);
+      });
+      setHistoryIdx(-1);
+    },
+    [setHistory]
+  );
 
-  const execSingle = useCallback((raw: string): CmdResult => {
-    const s = raw.trim();
-    if (!s) return { ok: false, msg: '空命令' };
-    const parts = s.split(/\s+/);
-    const cmd = parts[0].toLowerCase();
+  const execSingle = useCallback(
+    (raw: string): CmdResult => {
+      const s = raw.trim();
+      if (!s) return { ok: false, msg: '空命令' };
+      const parts = s.split(/\s+/);
+      const cmd = parts[0].toLowerCase();
 
-    if (cmd === 'undo') {
-      doUndo();
-      return { ok: true };
-    }
-    if (cmd === 'redo') {
-      doRedo();
-      return { ok: true };
-    }
-
-    pushUndo();
-
-    if (cmd === 'set') {
-      const rest = parts.slice(1);
-      for (let i = 0; i + 1 < rest.length; i += 2) {
-        const pos = parsePos(rest[i]);
-        const d = Number(rest[i + 1]);
-        if (!pos || !(d >= 1 && d <= 9)) continue;
-        setCellValue(pos, d as Digit);
+      if (cmd === 'undo') {
+        doUndo();
+        return { ok: true };
       }
-      return { ok: true };
-    }
-
-    if (cmd === 'clear') {
-      const rest = parts.slice(1);
-      for (let i = 0; i < rest.length; i++) {
-        const pos = parsePos(rest[i]);
-        if (!pos) continue;
-        clearCell(pos);
+      if (cmd === 'redo') {
+        doRedo();
+        return { ok: true };
       }
-      return { ok: true };
-    }
 
-    if (cmd === 'corner') {
-      const rest = parts.slice(1);
-      for (let i = 0; i + 1 < rest.length; i += 2) {
-        const pos = parsePos(rest[i]);
-        const d = Number(rest[i + 1]);
-        if (!pos || !(d >= 1 && d <= 9)) continue;
-        toggleCornerCandidate(pos, d as Digit);
+      pushUndo();
+
+      if (cmd === 'set') {
+        const rest = parts.slice(1);
+        for (let i = 0; i + 1 < rest.length; i += 2) {
+          const pos = parsePos(rest[i]);
+          const d = Number(rest[i + 1]);
+          if (!pos || !(d >= 1 && d <= 9)) continue;
+          setCellValue(pos, d as Digit);
+        }
+        return { ok: true };
       }
-      return { ok: true };
-    }
 
-    if (cmd === 'center') {
-      const rest = parts.slice(1);
-      for (let i = 0; i + 1 < rest.length; i += 2) {
-        const pos = parsePos(rest[i]);
-        const d = Number(rest[i + 1]);
-        if (!pos || !(d >= 1 && d <= 9)) continue;
-        toggleCenterCandidate(pos, d as Digit);
+      if (cmd === 'clear') {
+        const rest = parts.slice(1);
+        for (let i = 0; i < rest.length; i++) {
+          const pos = parsePos(rest[i]);
+          if (!pos) continue;
+          clearCell(pos);
+        }
+        return { ok: true };
       }
-      return { ok: true };
-    }
 
-    if (cmd === 'cellcolor') {
-      const rest = parts.slice(1);
-      for (let i = 0; i + 1 < rest.length; i += 2) {
-        const pos = parsePos(rest[i]);
-        const k = Number(rest[i + 1]);
-        if (!pos) continue;
-        const color = k >= 1 && k <= 8 ? (k as CellColor) : null;
-        setCellColor(pos, color as CellColor);
+      if (cmd === 'corner') {
+        const rest = parts.slice(1);
+        for (let i = 0; i + 1 < rest.length; i += 2) {
+          const pos = parsePos(rest[i]);
+          const d = Number(rest[i + 1]);
+          if (!pos || !(d >= 1 && d <= 9)) continue;
+          toggleCornerCandidate(pos, d as Digit);
+        }
+        return { ok: true };
       }
-      return { ok: true };
-    }
 
-    if (cmd === 'candcolor') {
-      const rest = parts.slice(1);
-      for (let i = 0; i + 3 < rest.length; i += 4) {
-        const pos = parsePos(rest[i]);
-        const d = Number(rest[i + 1]);
-        const k = Number(rest[i + 2]);
-        const t = rest[i + 3].toLowerCase();
-        if (!pos || !(d >= 1 && d <= 9)) continue;
-        const color = k >= 1 && k <= 6 ? (k as CandidateColor) : null;
-        const isCorner = t === 'corner';
-        const isCenter = t === 'center';
-        if (!isCorner && !isCenter) continue;
-        setCandidateColor(pos, d as Digit, color as CandidateColor, isCorner);
+      if (cmd === 'center') {
+        const rest = parts.slice(1);
+        for (let i = 0; i + 1 < rest.length; i += 2) {
+          const pos = parsePos(rest[i]);
+          const d = Number(rest[i + 1]);
+          if (!pos || !(d >= 1 && d <= 9)) continue;
+          toggleCenterCandidate(pos, d as Digit);
+        }
+        return { ok: true };
       }
-      return { ok: true };
-    }
 
-    if (cmd === 'highlight') {
-      const v = parts[1]?.toLowerCase();
-      if (!v || v === 'off') {
-        setHighlightedDigit(null);
-      } else {
-        const d = Number(v);
-        if (d >= 1 && d <= 9) setHighlightedDigit(d as Digit);
+      if (cmd === 'cellcolor') {
+        const rest = parts.slice(1);
+        for (let i = 0; i + 1 < rest.length; i += 2) {
+          const pos = parsePos(rest[i]);
+          const k = Number(rest[i + 1]);
+          if (!pos) continue;
+          const color = k >= 1 && k <= 8 ? (k as CellColor) : null;
+          setCellColor(pos, color as CellColor);
+        }
+        return { ok: true };
       }
-      return { ok: true };
-    }
 
-    if (cmd === 'select') {
-      const pos = parsePos(parts[1] || '');
-      if (pos) selectCell(pos);
-      return { ok: true };
-    }
-
-    if (cmd === 'link') {
-      const a = parsePosDigit(parts[1] || '');
-      const b = parsePosDigit(parts[2] || '');
-      const t = (parts[3] || '').toLowerCase();
-      if (a && b) {
-        addLink({
-          from: { position: a.pos, candidate: a.digit },
-          to: { position: b.pos, candidate: b.digit },
-          isStrong: t === 'strong',
-        });
+      if (cmd === 'candcolor') {
+        const rest = parts.slice(1);
+        for (let i = 0; i + 3 < rest.length; i += 4) {
+          const pos = parsePos(rest[i]);
+          const d = Number(rest[i + 1]);
+          const k = Number(rest[i + 2]);
+          const t = rest[i + 3].toLowerCase();
+          if (!pos || !(d >= 1 && d <= 9)) continue;
+          const color = k >= 1 && k <= 6 ? (k as CandidateColor) : null;
+          const isCorner = t === 'corner';
+          const isCenter = t === 'center';
+          if (!isCorner && !isCenter) continue;
+          setCandidateColor(pos, d as Digit, color as CandidateColor, isCorner);
+        }
+        return { ok: true };
       }
-      return { ok: true };
-    }
 
-    if (cmd === 'linkclear') {
-      clearLinks();
-      return { ok: true };
-    }
+      if (cmd === 'highlight') {
+        const v = parts[1]?.toLowerCase();
+        if (!v || v === 'off') {
+          setHighlightedDigit(null);
+        } else {
+          const d = Number(v);
+          if (d >= 1 && d <= 9) setHighlightedDigit(d as Digit);
+        }
+        return { ok: true };
+      }
 
-    return { ok: false, msg: '未知命令' };
-  }, [
-    addLink,
-    clearCell,
-    clearLinks,
-    doRedo,
-    doUndo,
-    pushUndo,
-    selectCell,
-    setCellColor,
-    setCellValue,
-    setCandidateColor,
-    setHighlightedDigit,
-    toggleCenterCandidate,
-    toggleCornerCandidate,
-  ]);
+      if (cmd === 'select') {
+        const pos = parsePos(parts[1] || '');
+        if (pos) selectCell(pos);
+        return { ok: true };
+      }
+
+      if (cmd === 'link') {
+        const a = parsePosDigit(parts[1] || '');
+        const b = parsePosDigit(parts[2] || '');
+        const t = (parts[3] || '').toLowerCase();
+        if (a && b) {
+          addLink({
+            from: { position: a.pos, candidate: a.digit },
+            to: { position: b.pos, candidate: b.digit },
+            isStrong: t === 'strong',
+          });
+        }
+        return { ok: true };
+      }
+
+      if (cmd === 'linkclear') {
+        clearLinks();
+        return { ok: true };
+      }
+
+      return { ok: false, msg: '未知命令' };
+    },
+    [
+      addLink,
+      clearCell,
+      clearLinks,
+      doRedo,
+      doUndo,
+      pushUndo,
+      selectCell,
+      setCellColor,
+      setCellValue,
+      setCandidateColor,
+      setHighlightedDigit,
+      toggleCenterCandidate,
+      toggleCornerCandidate,
+    ]
+  );
 
   const exec = useCallback(() => {
     const cmds = input
       .split(';')
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean);
     let lastRes: CmdResult = { ok: true };
     for (const c of cmds) {
@@ -305,7 +338,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         exec();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setHistoryIdx(idx => {
+        setHistoryIdx((idx) => {
           const next = idx < 0 ? history.length - 1 : Math.max(0, idx - 1);
           const val = history[next] ?? '';
           setInput(val);
@@ -313,9 +346,9 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         });
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setHistoryIdx(idx => {
+        setHistoryIdx((idx) => {
           const next = idx < 0 ? -1 : Math.min(history.length - 1, idx + 1);
-          const val = next < 0 ? '' : history[next] ?? '';
+          const val = next < 0 ? '' : (history[next] ?? '');
           setInput(val);
           return next;
         });
@@ -331,7 +364,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         <input
           ref={inputRef}
           value={input}
-          onChange={e => setInput(e.target.value)}
+          onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder="示例: set r1c1 5; corner r1c1 3"
           className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm outline-none focus:ring-2 focus:ring-ring"
