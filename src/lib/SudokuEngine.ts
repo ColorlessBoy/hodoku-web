@@ -82,7 +82,7 @@ export function setHighlightedDigit(schema: SudokuSchema, digit: Digit): SudokuS
     ...schema,
     cells: schema.cells.map((row) =>
       row.map((cell) => {
-        if (cell.value === digit || (cell.cornerCandidates.some((c) => c.digit === digit))) {
+        if (cell.value === digit || cell.cornerCandidates.some((c) => c.digit === digit)) {
           if (!cell.isHighlighted) {
             return { ...cell, isHighlighted: true };
           }
@@ -154,7 +154,7 @@ export function setHighlightedXY(schema: SudokuSchema): SudokuSchema {
     ...schema,
     cells: schema.cells.map((row) =>
       row.map((cell) => {
-        if (cell.cornerCandidates && cell.cornerCandidates.length == 2) {
+        if (cell.cornerCandidates && cell.cornerCandidates.length === 2) {
           if (!cell.isHighlighted) {
             return { ...cell, isHighlighted: true };
           }
@@ -167,20 +167,27 @@ export function setHighlightedXY(schema: SudokuSchema): SudokuSchema {
   };
 }
 
-export function setSelectedCells(schema: SudokuSchema, cells: CellPosition[]): SudokuSchema {
+export function setSelectedCells(
+  schema: SudokuSchema,
+  cellPositions: CellPosition[]
+): SudokuSchema {
   return {
     ...schema,
     cells: schema.cells.map((row) =>
       row.map((cell) => {
-        if (cell.isSelected) {
-          if 
+        if (!cell.isSelected) {
+          if (
+            cellPositions.some((c) => c.row === cell.position.row && c.col === cell.position.col)
+          ) {
+            return { ...cell, isSelected: true };
+          }
+        } else if (
+          !cellPositions.some((c) => c.row === cell.position.row && c.col === cell.position.col)
+        ) {
           return { ...cell, isSelected: false };
         }
-        if (cells.some((c) => c.row === cell.position.row && c.col === cell.position.col)) {
-          return { ...cell, isSelected: true };
-        }
-        if (!cells.some((c) => c.row === cell.position.row && c))
+        return cell;
       })
-    )
-  }
+    ),
+  };
 }
