@@ -4,7 +4,7 @@
  interface SudokuCanvasProps {
    schema: SudokuRenderSchema;
    onCellClick: (position: CellPosition) => void;
-  onCandidateClick?: (position: CellPosition, digit: Digit) => void;
+   onCandidateClick?: (position: CellPosition, digit: Digit) => void;
    size?: number;
  }
  
@@ -111,22 +111,22 @@
  export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
    schema,
    onCellClick,
-  onCandidateClick,
+   onCandidateClick,
    size = 450,
  }) => {
-   const canvasRef = useRef<HTMLCanvasElement>(null);
-   const dpr = window.devicePixelRatio || 1;
-   const cellSize = useMemo(() => size / 9, [size]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const dpr = window.devicePixelRatio || 1;
+  const cellSize = useMemo(() => size / 9, [size]);
   const padding = 2; // Canvas内边距，避免圆角裁切边框
   const actualSize = size - padding * 2;
   const actualCellSize = actualSize / 9;
    
-   // 处理点击
-   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-     const canvas = canvasRef.current;
-     if (!canvas) return;
+  // 处理点击
+  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
      
-     const rect = canvas.getBoundingClientRect();
+    const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left - padding;
     const y = e.clientY - rect.top - padding;
      
@@ -183,23 +183,23 @@
     // 绘制圆角裁切区域
     const radius = 8;
     ctx.beginPath();
-    ctx.roundRect(padding, padding, actualSize, actualSize, radius);
+    ctx.rect(padding, padding, actualSize, actualSize)
     ctx.clip();
     
     // 绘制背景
-     ctx.fillStyle = colors.gridBg;
+    ctx.fillStyle = colors.gridBg;
     ctx.fillRect(padding, padding, actualSize, actualSize);
      
-     // 渲染所有单元格
-     for (let row = 0; row < 9; row++) {
-       for (let col = 0; col < 9; col++) {
-         const cell = schema.cells[row][col];
+    // 渲染所有单元格
+    for (let row = 0; row < 9; row++) {
+      for (let col = 0; col < 9; col++) {
+        const cell = schema.cells[row][col];
         const x = padding + col * actualCellSize;
         const y = padding + row * actualCellSize;
-         
+          
         drawCell(ctx, cell, x, y, actualCellSize, colors);
-       }
-     }
+      }
+    }
      
      // 渲染网格线
     drawGridLines(ctx, actualSize, actualCellSize, colors, padding);
@@ -262,10 +262,10 @@
      ctx.textBaseline = 'middle';
      ctx.font = `${cell.isGiven ? '600' : '500'} ${cellSize * 0.55}px Inter, system-ui, sans-serif`;
      
-     if (cell.hasConflict) {
-       ctx.fillStyle = colors.error;
-     } else if (cell.isGiven) {
+     if (cell.isGiven) {
        ctx.fillStyle = colors.given;
+     } else if (cell.hasConflict) {
+       ctx.fillStyle = colors.error;
      } else {
        ctx.fillStyle = colors.filled;
      }
@@ -311,16 +311,16 @@
       const bgSize = gridSize * 0.85;
       ctx.fillStyle = colors[getCandidateColorKey(candidate.color)];
       ctx.beginPath();
-      ctx.roundRect(x - bgSize / 2, y - bgSize / 2, bgSize, bgSize, 3);
+      ctx.rect(x - bgSize / 2, y - bgSize / 2, bgSize, bgSize);
       ctx.fill();
     }
     
     // 设置字体
     if (candidate.color) {
-      ctx.font = `700 ${fontSize}px Inter, system-ui, sans-serif`;
+      ctx.font = `500 ${fontSize}px Inter, system-ui, sans-serif`;
       // 绘制白色描边增加区分度
       ctx.strokeStyle = 'white';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1;
       ctx.strokeText(String(candidate.digit), x, y);
       ctx.fillStyle = 'white';
      } else {

@@ -3,7 +3,6 @@ import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
-import vitest from "@vitest/eslint-plugin";
 
 export default tseslint.config(
   { ignores: ["dist"] },
@@ -12,10 +11,7 @@ export default tseslint.config(
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2020,
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
+      globals: globals.browser,
     },
     plugins: {
       "react-hooks": reactHooks,
@@ -27,20 +23,4 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
-  {
-    // Test files configuration
-    files: ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "src/test/**/*"],
-    plugins: {
-      vitest,
-    },
-    rules: {
-      ...vitest.configs.recommended.rules,
-    },
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        ...vitest.environments.env.globals,
-      },
-    },
-  }
 );
