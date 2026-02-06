@@ -6,6 +6,7 @@ import { useSudokuState } from '@/hooks/useSudokuState';
 import { CellPosition, Digit, CellColor, CandidateColor } from '@/types/sudoku';
 import { Link2, Link2Off, Undo2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CommandPad } from './CommandPad';
 
 export const SudokuApp: React.FC = () => {
   const {
@@ -20,6 +21,7 @@ export const SudokuApp: React.FC = () => {
     addLink,
     clearLinks,
     clearCell,
+    replaceSchema,
   } = useSudokuState();
 
   const [inputMode, setInputMode] = useState<'normal' | 'corner' | 'center'>('normal');
@@ -219,6 +221,21 @@ export const SudokuApp: React.FC = () => {
 
         {/* 控制面板 */}
         <div className="flex flex-col gap-6 w-72">
+          {/* 命令面板 */}
+          <CommandPad
+            schema={schema}
+            selectCell={selectCell}
+            setCellValue={setCellValue}
+            toggleCornerCandidate={toggleCornerCandidate}
+            toggleCenterCandidate={toggleCenterCandidate}
+            setCellColor={setCellColor}
+            setCandidateColor={setCandidateColor}
+            setHighlightedDigit={setHighlightedDigit}
+            addLink={addLink}
+            clearLinks={clearLinks}
+            clearCell={clearCell}
+            replaceSchema={replaceSchema}
+          />
           {/* 数字键盘 */}
           <div className="bg-card rounded-xl p-4 shadow-lg border border-border">
             <h3 className="text-sm font-semibold text-muted-foreground mb-3">输入</h3>

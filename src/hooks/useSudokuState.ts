@@ -298,6 +298,10 @@ export const useSudokuState = () => {
     });
   }, [detectConflicts, updateHighlights]);
 
+  const replaceSchema = useCallback((next: SudokuRenderSchema) => {
+    setSchema(next);
+  }, []);
+
   return {
     schema,
     selectCell,
@@ -310,5 +314,6 @@ export const useSudokuState = () => {
     addLink,
     clearLinks,
     clearCell,
+    replaceSchema,
   };
 };
