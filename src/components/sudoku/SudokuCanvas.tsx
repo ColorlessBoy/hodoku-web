@@ -70,7 +70,7 @@ const getColors = () => {
 };
 
 // 清除颜色缓存（用于主题切换）
-export const clearColorCache = () => {
+const clearColorCache = () => {
   colorsCache = null;
 };
 
