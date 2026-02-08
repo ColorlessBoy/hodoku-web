@@ -7,6 +7,9 @@ import {
   CellColor,
   ChainLink,
 } from '@/types/sudoku';
+import { validateLink, validateSet, validateClear } from '@/lib/sudokuOperator';
+import { solve, applySolutionToSchema } from '@/lib/sudokuSolver';
+import { generatePuzzle, gridToRenderSchema } from '@/lib/sudokuGenerator';
 import { cn } from '@/lib/utils';
 
 interface CommandPadProps {
@@ -187,30 +190,39 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         return { ok: true };
       }
 
-      pushUndo();
-
       if (cmd === 'set') {
         const rest = parts.slice(1);
+        const updates: { pos: CellPosition; d: Digit }[] = [];
         for (let i = 0; i + 1 < rest.length; i += 2) {
           const pos = parsePos(rest[i]);
           const d = Number(rest[i + 1]);
           if (!pos || !(d >= 1 && d <= 9)) continue;
-          setCellValue(pos, d as Digit);
+          const res = validateSet(schema, pos, d as Digit);
+          if (!res.ok) return res;
+          updates.push({ pos, d: d as Digit });
         }
+        pushUndo();
+        updates.forEach(({ pos, d }) => setCellValue(pos, d));
         return { ok: true };
       }
 
       if (cmd === 'clear') {
         const rest = parts.slice(1);
+        const toClear: CellPosition[] = [];
         for (let i = 0; i < rest.length; i++) {
           const pos = parsePos(rest[i]);
           if (!pos) continue;
-          clearCell(pos);
+          const res = validateClear(schema, pos);
+          if (!res.ok) return res;
+          toClear.push(pos);
         }
+        pushUndo();
+        toClear.forEach((pos) => clearCell(pos));
         return { ok: true };
       }
 
       if (cmd === 'corner') {
+        pushUndo();
         const rest = parts.slice(1);
         for (let i = 0; i + 1 < rest.length; i += 2) {
           const pos = parsePos(rest[i]);
@@ -222,6 +234,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       }
 
       if (cmd === 'center') {
+        pushUndo();
         const rest = parts.slice(1);
         for (let i = 0; i + 1 < rest.length; i += 2) {
           const pos = parsePos(rest[i]);
@@ -233,6 +246,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       }
 
       if (cmd === 'cellcolor') {
+        pushUndo();
         const rest = parts.slice(1);
         for (let i = 0; i + 1 < rest.length; i += 2) {
           const pos = parsePos(rest[i]);
@@ -245,6 +259,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       }
 
       if (cmd === 'candcolor') {
+        pushUndo();
         const rest = parts.slice(1);
         for (let i = 0; i + 3 < rest.length; i += 4) {
           const pos = parsePos(rest[i]);
@@ -282,18 +297,39 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         const a = parsePosDigit(parts[1] || '');
         const b = parsePosDigit(parts[2] || '');
         const t = (parts[3] || '').toLowerCase();
-        if (a && b) {
-          addLink({
-            from: { position: a.pos, candidate: a.digit },
-            to: { position: b.pos, candidate: b.digit },
-            isStrong: t === 'strong',
-          });
+        if (!a || !b) {
+          return { ok: false, msg: '用法: link r1c1:5 r2c2:5 weak|strong' };
         }
+        const link: ChainLink = {
+          from: { position: a.pos, candidate: a.digit },
+          to: { position: b.pos, candidate: b.digit },
+          isStrong: t === 'strong',
+        };
+        const res = validateLink(schema, link);
+        if (!res.ok) return res;
+        pushUndo();
+        addLink(link);
         return { ok: true };
       }
 
       if (cmd === 'linkclear') {
         clearLinks();
+        return { ok: true };
+      }
+
+      if (cmd === 'solve') {
+        const solution = solve(schema);
+        if (!solution) return { ok: false, msg: '当前题目无解' };
+        pushUndo();
+        replaceSchema(applySolutionToSchema(schema, solution));
+        return { ok: true };
+      }
+
+      if (cmd === 'new' || cmd === 'generate') {
+        const n = parseInt(parts[1] ?? '', 10);
+        const minClues = Number.isNaN(n) ? 25 : Math.max(17, Math.min(81, n));
+        pushUndo();
+        replaceSchema(gridToRenderSchema(generatePuzzle(minClues)));
         return { ok: true };
       }
 
@@ -306,6 +342,8 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       doRedo,
       doUndo,
       pushUndo,
+      replaceSchema,
+      schema,
       selectCell,
       setCellColor,
       setCellValue,

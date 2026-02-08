@@ -1,4 +1,5 @@
 import React from 'react';
+import { CommandPad } from './CommandPad';
 import { SudokuGrid } from './SudokuGrid';
 import { useSudokuState } from '@/hooks/useSudokuState';
 import { CellPosition, Digit } from '@/types/sudoku';
@@ -25,6 +26,21 @@ export const SudokuApp: React.FC = () => {
           />
         </div>
       </div>
+      {/* 数独操作面板 */}
+      <CommandPad
+        schema={schema}
+        selectCell={() => {}}
+        setCellValue={() => {}}
+        toggleCornerCandidate={() => {}}
+        toggleCenterCandidate={() => {}}
+        setCellColor={() => {}}
+        setCandidateColor={() => {}}
+        setHighlightedDigit={() => {}}
+        addLink={() => {}}
+        clearLinks={() => {}}
+        clearCell={() => {}}
+        replaceSchema={() => {}}
+      />
     </div>
   );
 };
