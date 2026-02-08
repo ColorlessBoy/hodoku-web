@@ -3,7 +3,7 @@
  * 不依赖渲染 schema，仅基于 9x9 数字网格（空位用 null 或 0 表示）。
  */
 import type { Digit } from '@/types/sudoku';
-import type { SudokuRenderSchema } from '@/types/sudoku';
+import type { SudokuSchema, Cell } from '@/types/sudoku';
 
 export type Grid = (Digit | null)[][];
 
@@ -33,10 +33,8 @@ function gridCopy(grid: Grid): Grid {
 /**
  * 从渲染 schema 得到 9x9 给定数字（空为 null）
  */
-export function schemaToGrid(render: SudokuRenderSchema): Grid {
-  return render.cells.map((row) =>
-    row.map((c) => (c.value != null ? c.value : null))
-  );
+export function schemaToGrid(schema: SudokuSchema): Grid {
+  return schema.cells.map((row) => row.map((c) => (c.digit != null ? c.digit : null)));
 }
 
 /**
@@ -100,8 +98,8 @@ export function countSolutions(grid: Grid, max: number = 2): number {
 /**
  * 基于渲染 schema 的便捷接口：只使用 cells 中的 value/isGiven，求解一个解。
  */
-export function solve(renderSchema: SudokuRenderSchema): Grid | null {
-  const grid = schemaToGrid(renderSchema);
+export function solve(schema: SudokuSchema): Grid | null {
+  const grid = schemaToGrid(schema);
   return solveGrid(grid);
 }
 
@@ -115,18 +113,16 @@ export function hasUniqueSolution(grid: Grid): boolean {
 /**
  * 将解写回渲染 schema：保留原有 isGiven，空位用解填满。
  */
-export function applySolutionToSchema(
-  schema: SudokuRenderSchema,
-  solution: Grid
-): SudokuRenderSchema {
+export function applySolutionToSchema(schema: SudokuSchema, solution: Grid): SudokuSchema {
   return {
     ...schema,
     cells: schema.cells.map((row, r) =>
       row.map((cell, c) => ({
         ...cell,
-        value: (solution[r][c] ?? cell.value) as Digit | null,
+        digit: solution[r][c] ? (solution[r][c] as Digit) : undefined,
       }))
     ),
     links: [], // 求解后清空链便于查看
+    superLinks: [],
   };
 }

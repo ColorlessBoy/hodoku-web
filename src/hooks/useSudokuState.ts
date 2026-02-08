@@ -1,21 +1,33 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import {
-  SudokuRenderSchema,
-  CellRenderState,
+  SudokuSchema,
+  Cell,
   CellPosition,
   Digit,
   CellColor,
   CandidateColor,
-  ChainLink,
-  createEmptyRenderSchema,
+  Link,
   examplePuzzle,
-  areInSameUnit,
   getBoxIndex,
+  isInSameUnit,
 } from '@/types/sudoku';
 
+// 创建空的 schema
+const createEmptySchema = (): SudokuSchema => ({
+  cells: Array.from({ length: 9 }, (_, row) =>
+    Array.from({ length: 9 }, (_, col): Cell => ({
+      position: { row, col, box: Math.floor(row / 3) * 3 + Math.floor(col / 3) },
+      isGiven: false,
+      cornerCandidates: [],
+    }))
+  ),
+  links: [],
+  superLinks: [],
+});
+
 export const useSudokuState = () => {
-  const [schema, setSchema] = useState<SudokuRenderSchema>(() => {
-    const initial = createEmptyRenderSchema();
+  const [schema, setSchema] = useState<SudokuSchema>(() => {
+    const initial = createEmptySchema();
 
     // 加载示例题目
     examplePuzzle.forEach((row, rowIndex) => {
@@ -23,7 +35,7 @@ export const useSudokuState = () => {
         if (value !== null) {
           initial.cells[rowIndex][colIndex] = {
             ...initial.cells[rowIndex][colIndex],
-            value,
+            digit: value,
             isGiven: true,
           };
         }
@@ -33,74 +45,24 @@ export const useSudokuState = () => {
     return initial;
   });
 
-  // 检测冲突
-  const detectConflicts = useCallback((cells: CellRenderState[][]): CellRenderState[][] => {
-    const newCells = cells.map((row) =>
-      row.map((cell) => ({
-        ...cell,
-        hasConflict: false,
-        conflictWith: [] as CellPosition[],
-      }))
-    );
-
-    // 检查每个格子
-    for (let row = 0; row < 9; row++) {
-      for (let col = 0; col < 9; col++) {
-        const value = newCells[row][col].value;
-        if (!value) continue;
-
-        // 检查同行
-        for (let c = 0; c < 9; c++) {
-          if (c !== col && newCells[row][c].value === value) {
-            newCells[row][col].hasConflict = true;
-            newCells[row][col].conflictWith?.push({ row, col: c });
-          }
-        }
-
-        // 检查同列
-        for (let r = 0; r < 9; r++) {
-          if (r !== row && newCells[r][col].value === value) {
-            newCells[row][col].hasConflict = true;
-            newCells[row][col].conflictWith?.push({ row: r, col });
-          }
-        }
-
-        // 检查同宫
-        const boxStartRow = Math.floor(row / 3) * 3;
-        const boxStartCol = Math.floor(col / 3) * 3;
-        for (let r = boxStartRow; r < boxStartRow + 3; r++) {
-          for (let c = boxStartCol; c < boxStartCol + 3; c++) {
-            if ((r !== row || c !== col) && newCells[r][c].value === value) {
-              newCells[row][col].hasConflict = true;
-              newCells[row][col].conflictWith?.push({ row: r, col: c });
-            }
-          }
-        }
-      }
-    }
-
-    return newCells;
-  }, []);
-
   // 更新高亮状态
   const updateHighlights = useCallback(
     (
-      cells: CellRenderState[][],
+      cells: Cell[][],
       selectedCell: CellPosition | null,
       highlightedDigit: Digit | null
-    ): CellRenderState[][] => {
+    ): Cell[][] => {
       return cells.map((row, rowIndex) =>
-        row.map((cell, colIndex): CellRenderState => {
+        row.map((cell, colIndex): Cell => {
           const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
           const isRelated = selectedCell
-            ? areInSameUnit({ row: rowIndex, col: colIndex }, selectedCell) && !isSelected
+            ? isInSameUnit({ row: rowIndex, col: colIndex }, selectedCell) && !isSelected
             : false;
           const isSameValue =
-            selectedCell && cells[selectedCell.row][selectedCell.col].value
-              ? cell.value === cells[selectedCell.row][selectedCell.col].value &&
-                cell.value !== null
+            selectedCell && cells[selectedCell.row][selectedCell.col].digit
+              ? cell.digit === cells[selectedCell.row][selectedCell.col].digit
               : highlightedDigit
-                ? cell.value === highlightedDigit
+                ? cell.digit === highlightedDigit
                 : false;
 
           return {
@@ -108,7 +70,7 @@ export const useSudokuState = () => {
             isSelected,
             isRelated,
             isSameValue: isSameValue && !isSelected,
-            isHighlighted: highlightedDigit ? cell.value === highlightedDigit : false,
+            isHighlighted: highlightedDigit ? cell.digit === highlightedDigit : false,
           };
         })
       );
@@ -120,11 +82,10 @@ export const useSudokuState = () => {
   const selectCell = useCallback(
     (position: CellPosition | null) => {
       setSchema((prev) => {
-        const newCells = updateHighlights(prev.cells, position, prev.highlightedDigit);
+        const newCells = updateHighlights(prev.cells, position, null);
         return {
           ...prev,
           cells: newCells,
-          selectedCell: position,
         };
       });
     },
@@ -143,8 +104,7 @@ export const useSudokuState = () => {
             if (rowIndex === position.row && colIndex === position.col) {
               return {
                 ...c,
-                value,
-                centerCandidates: value ? [] : c.centerCandidates,
+                digit: value ?? undefined,
                 cornerCandidates: value ? [] : c.cornerCandidates,
               };
             }
@@ -152,12 +112,7 @@ export const useSudokuState = () => {
           })
         );
 
-        const cellsWithConflicts = detectConflicts(newCells);
-        const cellsWithHighlights = updateHighlights(
-          cellsWithConflicts,
-          prev.selectedCell,
-          prev.highlightedDigit
-        );
+        const cellsWithHighlights = updateHighlights(newCells, null, null);
 
         return {
           ...prev,
@@ -165,25 +120,24 @@ export const useSudokuState = () => {
         };
       });
     },
-    [detectConflicts, updateHighlights]
+    [updateHighlights]
   );
 
   // 切换角注
   const toggleCornerCandidate = useCallback((position: CellPosition, digit: Digit) => {
     setSchema((prev) => {
       const cell = prev.cells[position.row][position.col];
-      if (cell.isGiven || cell.value) return prev;
+      if (cell.isGiven || cell.digit) return prev;
+
+      const existing = (cell.cornerCandidates ?? []).find((cc) => cc.digit === digit);
+      const newCornerCandidates = existing
+        ? (cell.cornerCandidates ?? []).filter((cc) => cc.digit !== digit)
+        : [...(cell.cornerCandidates ?? []), { digit }].sort((a, b) => a.digit - b.digit);
 
       const newCells = prev.cells.map((row, rowIndex) =>
         row.map((c, colIndex) => {
           if (rowIndex === position.row && colIndex === position.col) {
-            const existing = c.cornerCandidates.find((cc) => cc.digit === digit);
-            return {
-              ...c,
-              cornerCandidates: existing
-                ? c.cornerCandidates.filter((cc) => cc.digit !== digit)
-                : [...c.cornerCandidates, { digit }].sort((a, b) => a.digit - b.digit),
-            };
+            return { ...c, cornerCandidates: newCornerCandidates };
           }
           return c;
         })
@@ -193,29 +147,10 @@ export const useSudokuState = () => {
     });
   }, []);
 
-  // 切换中心候选数
+  // 切换中心候选数（SudokuEngine 不支持 centerCandidates，暂时保留但可能需要后续处理）
   const toggleCenterCandidate = useCallback((position: CellPosition, digit: Digit) => {
-    setSchema((prev) => {
-      const cell = prev.cells[position.row][position.col];
-      if (cell.isGiven || cell.value) return prev;
-
-      const newCells = prev.cells.map((row, rowIndex) =>
-        row.map((c, colIndex) => {
-          if (rowIndex === position.row && colIndex === position.col) {
-            const existing = c.centerCandidates.find((cc) => cc.digit === digit);
-            return {
-              ...c,
-              centerCandidates: existing
-                ? c.centerCandidates.filter((cc) => cc.digit !== digit)
-                : [...c.centerCandidates, { digit }].sort((a, b) => a.digit - b.digit),
-            };
-          }
-          return c;
-        })
-      );
-
-      return { ...prev, cells: newCells };
-    });
+    // SudokuEngine 只支持 cornerCandidates，这里暂时不实现
+    console.warn('toggleCenterCandidate not supported by SudokuEngine');
   }, []);
 
   // 设置单元格颜色
@@ -224,7 +159,7 @@ export const useSudokuState = () => {
       const newCells = prev.cells.map((row, rowIndex) =>
         row.map((c, colIndex) => {
           if (rowIndex === position.row && colIndex === position.col) {
-            return { ...c, backgroundColor: color };
+            return { ...c, color };
           }
           return c;
         })
@@ -236,17 +171,18 @@ export const useSudokuState = () => {
   // 设置候选数颜色
   const setCandidateColor = useCallback(
     (position: CellPosition, digit: Digit, color: CandidateColor, isCorner: boolean) => {
+      if (!isCorner) {
+        console.warn('setCandidateColor for center candidates not supported by SudokuEngine');
+        return;
+      }
       setSchema((prev) => {
         const newCells = prev.cells.map((row, rowIndex) =>
           row.map((c, colIndex) => {
             if (rowIndex === position.row && colIndex === position.col) {
-              const candidates = isCorner ? c.cornerCandidates : c.centerCandidates;
-              const newCandidates = candidates.map((cc) =>
+              const newCornerCandidates = (c.cornerCandidates ?? []).map((cc) =>
                 cc.digit === digit ? { ...cc, color } : cc
               );
-              return isCorner
-                ? { ...c, cornerCandidates: newCandidates }
-                : { ...c, centerCandidates: newCandidates };
+              return { ...c, cornerCandidates: newCornerCandidates };
             }
             return c;
           })
@@ -261,11 +197,10 @@ export const useSudokuState = () => {
   const setHighlightedDigit = useCallback(
     (digit: Digit | null) => {
       setSchema((prev) => {
-        const newCells = updateHighlights(prev.cells, prev.selectedCell, digit);
+        const newCells = updateHighlights(prev.cells, null, digit);
         return {
           ...prev,
           cells: newCells,
-          highlightedDigit: digit,
         };
       });
     },
@@ -273,7 +208,7 @@ export const useSudokuState = () => {
   );
 
   // 添加链
-  const addLink = useCallback((link: ChainLink) => {
+  const addLink = useCallback((link: Link) => {
     setSchema((prev) => ({
       ...prev,
       links: [...prev.links, link],
@@ -300,30 +235,24 @@ export const useSudokuState = () => {
             if (rowIndex === position.row && colIndex === position.col) {
               return {
                 ...c,
-                value: null,
-                centerCandidates: [],
+                digit: undefined,
                 cornerCandidates: [],
-                backgroundColor: null,
+                color: undefined,
               };
             }
             return c;
           })
         );
 
-        const cellsWithConflicts = detectConflicts(newCells);
-        const cellsWithHighlights = updateHighlights(
-          cellsWithConflicts,
-          prev.selectedCell,
-          prev.highlightedDigit
-        );
+        const cellsWithHighlights = updateHighlights(newCells, null, null);
 
         return { ...prev, cells: cellsWithHighlights };
       });
     },
-    [detectConflicts, updateHighlights]
+    [updateHighlights]
   );
 
-  const replaceSchema = useCallback((next: SudokuRenderSchema) => {
+  const replaceSchema = useCallback((next: SudokuSchema) => {
     setSchema(next);
   }, []);
 

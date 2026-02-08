@@ -2,9 +2,8 @@
  * 数独题目生成器：先生成一个合法满盘，再挖空并保证唯一解。
  */
 import type { Digit } from '@/types/sudoku';
+import type { SudokuSchema, Cell } from '@/types/sudoku';
 import { countSolutions, type Grid } from '@/lib/sudokuSolver';
-import type { SudokuRenderSchema } from '@/types/sudoku';
-import { createEmptyRenderSchema } from '@/types/sudoku';
 
 const DIGITS: Digit[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -112,21 +111,31 @@ export function generatePuzzle(minClues: number = 25): Grid {
 }
 
 /**
- * 将 9x9 题目网格转为 SudokuRenderSchema（空位为 null，有数字的设为 isGiven: true）。
+ * 将 9x9 题目网格转为 SudokuSchema（空位为 null，有数字的设为 isGiven: true）。
  */
-export function gridToRenderSchema(grid: Grid): SudokuRenderSchema {
-  const schema = createEmptyRenderSchema();
+export function gridToSchema(grid: Grid): SudokuSchema {
+  const cells: Cell[][] = Array.from({ length: 9 }, (_, row) =>
+    Array.from({ length: 9 }, (_, col): Cell => ({
+      position: { row, col, box: Math.floor(row / 3) * 3 + Math.floor(col / 3) },
+      isGiven: false,
+      cornerCandidates: [],
+    }))
+  );
+
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
       const v = grid[r][c];
       if (v != null && v !== 0) {
-        schema.cells[r][c] = {
-          ...schema.cells[r][c],
-          value: v as Digit,
+        cells[r][c] = {
+          ...cells[r][c],
+          digit: v as Digit,
           isGiven: true,
         };
       }
     }
   }
-  return schema;
+  return { cells, links: [], superLinks: [] };
 }
+
+// 保留旧函数名以保持兼容性
+export const gridToRenderSchema = gridToSchema;

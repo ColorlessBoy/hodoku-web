@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  SudokuRenderSchema,
+  SudokuSchema,
   CellPosition,
   Digit,
   CandidateColor,
   CellColor,
-  ChainLink,
+  Link,
 } from '@/types/sudoku';
 import { validateLink, validateSet, validateClear } from '@/lib/sudokuOperator';
 import { solve, applySolutionToSchema } from '@/lib/sudokuSolver';
@@ -13,7 +13,7 @@ import { generatePuzzle, gridToRenderSchema } from '@/lib/sudokuGenerator';
 import { cn } from '@/lib/utils';
 
 interface CommandPadProps {
-  schema: SudokuRenderSchema;
+  schema: SudokuSchema;
   selectCell: (position: CellPosition | null) => void;
   setCellValue: (position: CellPosition, value: Digit | null) => void;
   toggleCornerCandidate: (position: CellPosition, digit: Digit) => void;
@@ -26,10 +26,10 @@ interface CommandPadProps {
     isCorner: boolean
   ) => void;
   setHighlightedDigit: (digit: Digit | null) => void;
-  addLink: (link: ChainLink) => void;
+  addLink: (link: Link) => void;
   clearLinks: () => void;
   clearCell: (position: CellPosition) => void;
-  replaceSchema: (next: SudokuRenderSchema) => void;
+  replaceSchema: (next: SudokuSchema) => void;
 }
 
 type CmdResult = { ok: boolean; msg?: string };
@@ -94,8 +94,8 @@ export const CommandPad: React.FC<CommandPadProps> = ({
   const [input, setInput] = useState('');
   const [history, setHistory] = useLocalStore<string[]>('sudoku_cmd_history', []);
   const [historyIdx, setHistoryIdx] = useState<number>(-1);
-  const [undoStack, setUndoStack] = useLocalStore<SudokuRenderSchema[]>('sudoku_undo_stack', []);
-  const [redoStack, setRedoStack] = useLocalStore<SudokuRenderSchema[]>('sudoku_redo_stack', []);
+  const [undoStack, setUndoStack] = useLocalStore<SudokuSchema[]>('sudoku_undo_stack', []);
+  const [redoStack, setRedoStack] = useLocalStore<SudokuSchema[]>('sudoku_redo_stack', []);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -103,7 +103,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     const raw = localStorage.getItem('sudoku_last_schema');
     if (raw) {
       try {
-        const snap = JSON.parse(raw) as SudokuRenderSchema;
+        const snap = JSON.parse(raw) as SudokuSchema;
         replaceSchema(snap);
       } catch {
         void 0;

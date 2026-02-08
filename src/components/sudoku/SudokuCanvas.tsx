@@ -1,14 +1,14 @@
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import {
-  SudokuRenderSchema,
+  SudokuSchema,
   CellPosition,
   Digit,
-  CandidateInfo,
-  CellRenderState,
+  Candidate,
+  Cell,
 } from '@/types/sudoku';
 
 interface SudokuCanvasProps {
-  schema: SudokuRenderSchema;
+  schema: SudokuSchema;
   onCellClick: (position: CellPosition) => void;
   onCandidateClick?: (position: CellPosition, digit: Digit) => void;
   size?: number;
@@ -237,7 +237,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
 // 绘制单元格
 function drawCell(
   ctx: CanvasRenderingContext2D,
-  cell: CellRenderState,
+  cell: Cell,
   x: number,
   y: number,
   cellSize: number,
@@ -248,8 +248,8 @@ function drawCell(
 
   if (cell.hasConflict) {
     bgColor = colors.errorBg;
-  } else if (cell.backgroundColor) {
-    bgColor = colors[getCellColorKey(cell.backgroundColor)];
+  } else if (cell.color) {
+    bgColor = colors[getCellColorKey(cell.color)];
   } else if (cell.isSelected) {
     bgColor = colors.cellSelected;
   } else if (cell.isSameValue) {
@@ -265,7 +265,7 @@ function drawCell(
   ctx.fillRect(x, y, cellSize, cellSize);
 
   // 绘制主值
-  if (cell.value) {
+  if (cell.digit) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.font = `${cell.isGiven ? '600' : '500'} ${cellSize * 0.55}px Inter, system-ui, sans-serif`;
@@ -278,25 +278,20 @@ function drawCell(
       ctx.fillStyle = colors.filled;
     }
 
-    ctx.fillText(String(cell.value), x + cellSize / 2, y + cellSize / 2);
+    ctx.fillText(String(cell.digit), x + cellSize / 2, y + cellSize / 2);
     return; // 有主值时不渲染候选数
   }
 
   // 绘制角注（九宫格布局）
-  if (cell.cornerCandidates.length > 0) {
+  if (cell.cornerCandidates && cell.cornerCandidates.length > 0) {
     drawCornerCandidates(ctx, cell.cornerCandidates, x, y, cellSize, colors);
-  }
-
-  // 绘制中心候选数（仅当没有角注时）
-  if (cell.cornerCandidates.length === 0 && cell.centerCandidates.length > 0) {
-    drawCenterCandidates(ctx, cell.centerCandidates, x, y, cellSize, colors);
   }
 }
 
 // 绘制角注（九宫格固定布局）
 function drawCornerCandidates(
   ctx: CanvasRenderingContext2D,
-  candidates: CandidateInfo[],
+  candidates: Candidate[],
   cellX: number,
   cellY: number,
   cellSize: number,
@@ -336,70 +331,7 @@ function drawCornerCandidates(
       ctx.fillStyle = colors.muted;
     }
 
-    // 绘制删除线效果
-    if (candidate.eliminated) {
-      ctx.globalAlpha = 0.5;
-    }
-
     ctx.fillText(String(candidate.digit), x, y);
-
-    // 绘制删除线
-    if (candidate.eliminated) {
-      ctx.strokeStyle = ctx.fillStyle;
-      ctx.lineWidth = 1;
-      const textWidth = ctx.measureText(String(candidate.digit)).width;
-      ctx.beginPath();
-      ctx.moveTo(x - textWidth / 2, y);
-      ctx.lineTo(x + textWidth / 2, y);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-  });
-}
-
-// 绘制中心候选数
-function drawCenterCandidates(
-  ctx: CanvasRenderingContext2D,
-  candidates: CandidateInfo[],
-  cellX: number,
-  cellY: number,
-  cellSize: number,
-  colors: Record<string, string>
-) {
-  const fontSize = cellSize * 0.2;
-  const totalWidth = candidates.length * fontSize * 0.6;
-  const startX = cellX + (cellSize - totalWidth) / 2 + fontSize * 0.3;
-
-  ctx.font = `500 ${fontSize}px Inter, system-ui, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  candidates.forEach((candidate, index) => {
-    const x = startX + index * fontSize * 0.6;
-    const y = cellY + cellSize / 2;
-
-    if (candidate.color) {
-      ctx.fillStyle = colors[getCandidateColorKey(candidate.color)];
-    } else {
-      ctx.fillStyle = colors.muted;
-    }
-
-    if (candidate.eliminated) {
-      ctx.globalAlpha = 0.5;
-    }
-
-    ctx.fillText(String(candidate.digit), x, y);
-
-    if (candidate.eliminated) {
-      ctx.strokeStyle = ctx.fillStyle;
-      ctx.lineWidth = 1;
-      const textWidth = ctx.measureText(String(candidate.digit)).width;
-      ctx.beginPath();
-      ctx.moveTo(x - textWidth / 2, y);
-      ctx.lineTo(x + textWidth / 2, y);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
   });
 }
 
@@ -455,7 +387,7 @@ function drawGridLines(
 // 绘制链条
 function drawLinks(
   ctx: CanvasRenderingContext2D,
-  links: SudokuRenderSchema['links'],
+  links: import('@/types/sudoku').Link[],
   cellSize: number,
   colors: Record<string, string>,
   offset: number = 0

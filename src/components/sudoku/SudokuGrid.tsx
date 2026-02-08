@@ -1,9 +1,9 @@
 import React from 'react';
-import { SudokuRenderSchema, CellPosition, Digit } from '@/types/sudoku';
+import { SudokuSchema, CellPosition, Digit } from '@/types/sudoku';
 import { SudokuCanvas } from './SudokuCanvas';
 
 interface SudokuGridProps {
-  schema: SudokuRenderSchema;
+  schema: SudokuSchema;
   onCellClick: (position: CellPosition) => void;
   onCandidateClick?: (position: CellPosition, digit: Digit) => void;
   size?: number; // 整个网格的大小（像素）

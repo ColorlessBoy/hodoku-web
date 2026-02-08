@@ -1,111 +1,123 @@
-// Unified Sudoku Rendering Schema
+// Re-export SudokuEngine types
+export type { CellColor, CandidateColor, Digit } from '@/lib/SudokuEngine';
+export type {
+  CellPosition,
+  Candidate,
+  Cell,
+  LinkEndpoint,
+  Link,
+  SuperLinkEndpoint,
+  SuperLink,
+  SudokuSchema,
+} from '@/lib/SudokuEngine';
 
-export type CellColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
-export type CandidateColor = 1 | 2 | 3 | 4 | 5 | 6 | null;
-export type Digit = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+export {
+  getBoxIndex,
+  getBoxRange,
+  isInBox,
+  getRelatedRange,
+  isInSameUnit,
+  createLink,
+  getCell,
+  isValidEndpoint,
+  checkWeakLink,
+  checkStrongLink,
+  setDigit,
+  cloneCells,
+  autofillUniqueCandidates,
+  lastDigitRow,
+  lastDigitCol,
+  lastDigitBox,
+  nakedPair,
+  nakedPairsRow,
+  hiddenPairsRow,
+  nakedPairsCol,
+  hiddenPairsCol,
+  nakedPairsBox,
+  hiddenPairsBox,
+  setGroupCandidatesRow,
+  checkGroupCandidatesRow,
+  setGroupCandidatesCol,
+  checkGroupCandidatesCol,
+  setGroupCandidatesBox,
+  checkGroupCandidatesBox,
+  clearAllHighlighted,
+  setHighlightedDigit,
+  addHighlightedDigit,
+  subHighlightedDigit,
+  setHighlightedDigits,
+  addHighlightedDigits,
+  subHighlightedDigits,
+  setHighlightedRow,
+  addHighlightedRow,
+  subHighlightedRow,
+  setHighlightedRows,
+  addHighlightedRows,
+  subHighlightedRows,
+  setHighlightedCol,
+  addHighlightedCol,
+  subHighlightedCol,
+  setHighlightedCols,
+  addHighlightedCols,
+  subHighlightedCols,
+  setHighlightedBox,
+  addHighlightedBox,
+  subHighlightedBox,
+  setHighlightedBoxes,
+  addHighlightedBoxes,
+  subHighlightedBoxes,
+  setHighlightedXY,
+  addHighlightedXY,
+  clearAllSelected,
+  setSelectedDigit,
+  addSelectedDigit,
+  subSelectedDigit,
+  setSelectedDigits,
+  addSelectedDigits,
+  subSelectedDigits,
+  setSelectedCell,
+  addSelectedCell,
+  subSelectedCell,
+  setSelectedCells,
+  addSelectedCells,
+  subSelectedCells,
+  setSelectedRow,
+  addSelectedRow,
+  subSelectedRow,
+  setSelectedRows,
+  addSelectedRows,
+  subSelectedRows,
+  setSelectedCol,
+  addSelectedCol,
+  subSelectedCol,
+  setSelectedCols,
+  addSelectedCols,
+  subSelectedCols,
+  setSelectedBox,
+  addSelectedBox,
+  subSelectedBox,
+  setSelectedBoxes,
+  addSelectedBoxes,
+  subSelectedBoxes,
+  addCellColor,
+  addCandidateColor,
+  addCandidate,
+  addCandidates,
+  subCandidate,
+  subCandidates,
+} from '@/lib/SudokuEngine';
 
-export interface CellPosition {
-  row: number; // 0-8
-  col: number; // 0-8
-}
+// Helper types for UI
+import type { CellColor, CandidateColor, Digit } from '@/lib/SudokuEngine';
 
-export interface CandidateInfo {
-  digit: Digit;
-  color?: CandidateColor;
-  eliminated?: boolean; // 是否被消除（显示为删除线）
-}
-
-export interface CellRenderState {
-  // 值相关
-  value: Digit | null;
-  isGiven: boolean; // 是否是题目给定的数字
-
-  // 候选数相关
-  centerCandidates: CandidateInfo[]; // 中心候选数
-  cornerCandidates: CandidateInfo[]; // 角注候选数
-
-  // 高亮和颜色
-  backgroundColor?: CellColor; // 单元格背景色
-  isSelected?: boolean; // 是否被选中
-  isHighlighted?: boolean; // 是否高亮
-  isSameValue?: boolean; // 是否与选中格相同值
-  isRelated?: boolean; // 是否与选中格同行/列/宫
-
-  // 错误状态
-  hasConflict?: boolean; // 是否有冲突
-  conflictWith?: CellPosition[]; // 冲突的单元格位置
-}
-
-export interface LinkEndpoint {
-  position: CellPosition;
-  candidate?: Digit; // 如果是候选数链，指定候选数
-}
-
-export interface ChainLink {
-  from: LinkEndpoint;
-  to: LinkEndpoint;
-  isStrong: boolean; // true = 强链，false = 弱链
-  color?: string; // 可选的自定义颜色
-}
-
-export interface SudokuRenderSchema {
-  // 81个格子的渲染状态
-  cells: CellRenderState[][];
-
-  // 链（强弱链可视化）
-  links: ChainLink[];
-
-  // 全局状态
-  selectedCell: CellPosition | null;
-  highlightedDigit: Digit | null;
-
-  // 显示选项
-  showConflicts: boolean;
-  showRelatedCells: boolean;
-  showSameValueHighlight: boolean;
-}
-
-// 工具函数类型
 export type CellIndex = `${number}-${number}`;
 
 export const getCellIndex = (row: number, col: number): CellIndex => `${row}-${col}`;
 
-export const parseCellIndex = (index: CellIndex): CellPosition => {
+export const parseCellIndex = (index: CellIndex): { row: number; col: number } => {
   const [row, col] = index.split('-').map(Number);
   return { row, col };
 };
-
-export const getBoxIndex = (row: number, col: number): number =>
-  Math.floor(row / 3) * 3 + Math.floor(col / 3);
-
-export const areInSameUnit = (pos1: CellPosition, pos2: CellPosition): boolean => {
-  return (
-    pos1.row === pos2.row ||
-    pos1.col === pos2.col ||
-    getBoxIndex(pos1.row, pos1.col) === getBoxIndex(pos2.row, pos2.col)
-  );
-};
-
-// 创建空的渲染状态
-export const createEmptyRenderSchema = (): SudokuRenderSchema => ({
-  cells: Array.from({ length: 9 }, () =>
-    Array.from(
-      { length: 9 },
-      (): CellRenderState => ({
-        value: null,
-        isGiven: false,
-        centerCandidates: [],
-        cornerCandidates: [],
-      })
-    )
-  ),
-  links: [],
-  selectedCell: null,
-  highlightedDigit: null,
-  showConflicts: true,
-  showRelatedCells: true,
-  showSameValueHighlight: true,
-});
 
 // 示例数独题目
 export const examplePuzzle: (Digit | null)[][] = [
