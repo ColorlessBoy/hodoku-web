@@ -762,7 +762,7 @@ export function lastDigitRow(schema: SudokuSchema, row: number, digit: Digit): S
     }
   }
   if (cnt !== 1 || col === -1) {
-    throw new Error('Last digit row is not valid');
+    return schema;
   }
   setDigit(cells, row, col, digit);
   return { ...schema, cells };
@@ -782,7 +782,7 @@ export function lastDigitCol(schema: SudokuSchema, col: number, digit: Digit): S
     }
   }
   if (cnt !== 1 || row === -1) {
-    throw new Error('Last digit col is not valid');
+    return schema;
   }
   setDigit(cells, row, col, digit);
   return { ...schema, cells };
@@ -805,7 +805,7 @@ export function lastDigitBox(schema: SudokuSchema, box: number, digit: Digit): S
     }
   }
   if (cnt !== 1 || row === -1 || col === -1) {
-    throw new Error('Last digit box is not valid');
+    return schema;
   }
   setDigit(cells, row, col, digit);
   return { ...schema, cells };
@@ -822,7 +822,7 @@ export function nakedPair(
   const cell1 = cells[position1.row][position1.col];
   const cell2 = cells[position2.row][position2.col];
   if (!(cell1.cornerCandidates?.length === 2 && cell2.cornerCandidates.length === 2)) {
-    throw new Error('Naked pair is not valid');
+    return schema;
   }
   if (
     !(
@@ -832,7 +832,7 @@ export function nakedPair(
       cell2.cornerCandidates?.some((c) => c.digit === digit2)
     )
   ) {
-    throw new Error('Naked pair is not valid');
+    return schema;
   }
   if (cell1.position.row === cell2.position.row) {
     for (let c = 0; c < 9; c++) {
@@ -878,7 +878,7 @@ export function nakedPairsRow(schema: SudokuSchema, row: number, digits: Digit[]
   for (let c = 0; c < 9; c++) {
     const cell = cells[row][c];
     if (digits.some((d) => d === cell.digit)) {
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
     for (const d of digits) {
       if (cell.cornerCandidates?.some((c) => c.digit === d)) {
@@ -890,17 +890,17 @@ export function nakedPairsRow(schema: SudokuSchema, row: number, digits: Digit[]
     }
   }
   if (totalCols.size !== digits.length) {
-    throw new Error('Hidden pairs row is not valid');
+    return schema;
   }
   for (const [_, cols] of sepCols) {
     if (cols.size === 0) {
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
   }
   for (const col of totalCols) {
     if (cells[row][col].cornerCandidates?.some((c) => digits.some((d) => d !== c.digit))) {
       // 存在不等于digits的候选数
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
   }
   for (let c = 0; c < 9; c++) {
@@ -920,7 +920,7 @@ export function hiddenPairsRow(schema: SudokuSchema, row: number, digits: Digit[
   for (let c = 0; c < 9; c++) {
     const cell = cells[row][c];
     if (digits.some((d) => d === cell.digit)) {
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
     for (const d of digits) {
       if (cell.cornerCandidates?.some((c) => c.digit === d)) {
@@ -932,11 +932,11 @@ export function hiddenPairsRow(schema: SudokuSchema, row: number, digits: Digit[
     }
   }
   if (totalCols.size !== digits.length) {
-    throw new Error('Hidden pairs row is not valid');
+    return schema;
   }
   for (const [_, cols] of sepCols) {
     if (cols.size === 0) {
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
   }
   for (const col of totalCols) {
@@ -954,7 +954,7 @@ export function nakedPairsCol(schema: SudokuSchema, col: number, digits: Digit[]
   for (let r = 0; r < 9; r++) {
     const cell = cells[r][col];
     if (digits.some((d) => d === cell.digit)) {
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
     for (const d of digits) {
       if (cell.cornerCandidates?.some((c) => c.digit === d)) {
@@ -966,17 +966,17 @@ export function nakedPairsCol(schema: SudokuSchema, col: number, digits: Digit[]
     }
   }
   if (totalRows.size !== digits.length) {
-    throw new Error('Hidden pairs row is not valid');
+    return schema;
   }
   for (const [_, rows] of sepRows) {
     if (rows.size === 0) {
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
   }
   for (const row of totalRows) {
     if (cells[row][col].cornerCandidates?.some((c) => digits.some((d) => d !== c.digit))) {
       // 存在不等于digits的候选数
-      throw new Error('Hidden pairs row is not valid');
+      return schema;
     }
   }
   for (let r = 0; r < 9; r++) {
@@ -996,7 +996,7 @@ export function hiddenPairsCol(schema: SudokuSchema, col: number, digits: Digit[
   for (let r = 0; r < 9; r++) {
     const cell = cells[r][col];
     if (digits.some((d) => d === cell.digit)) {
-      throw new Error('Hidden pairs col is not valid');
+      return schema;
     }
     for (const d of digits) {
       if (cell.cornerCandidates?.some((c) => c.digit === d)) {
@@ -1008,11 +1008,11 @@ export function hiddenPairsCol(schema: SudokuSchema, col: number, digits: Digit[
     }
   }
   if (totalRows.size !== digits.length) {
-    throw new Error('Hidden pairs col is not valid');
+    return schema;
   }
   for (const [digit, rows] of sepRows) {
     if (rows.size === 0) {
-      throw new Error('Hidden pairs col is not valid');
+      return schema;
     }
   }
   for (const row of totalRows) {
@@ -1038,11 +1038,11 @@ export function nakedPairsBox(schema: SudokuSchema, box: number, digits: Digit[]
     }
   }
   if (totalPositions.size !== digits.length) {
-    throw new Error('Naked pairs box is not valid');
+    return schema;
   }
   for (const [_, positions] of sepPositions) {
     if (positions.size === 0) {
-      throw new Error('Naked pairs box is not valid');
+      return schema;
     }
   }
   for (const position of totalPositions) {
@@ -1052,7 +1052,7 @@ export function nakedPairsBox(schema: SudokuSchema, box: number, digits: Digit[]
       )
     ) {
       // 存在不等于digits的候选数
-      throw new Error('Naked pairs box is not valid');
+      return schema;
     }
   }
 
@@ -1075,7 +1075,7 @@ export function hiddenPairsBox(schema: SudokuSchema, box: number, digits: Digit[
   for (const position of getBoxRange(box)) {
     const cell = cells[position.row][position.col];
     if (digits.some((d) => d === cell.digit)) {
-      throw new Error('Hidden pairs box is not valid');
+      return schema;
     }
   }
   for (const digit of digits) {
@@ -1088,11 +1088,11 @@ export function hiddenPairsBox(schema: SudokuSchema, box: number, digits: Digit[
     }
   }
   if (totalCells.size !== digits.length) {
-    throw new Error('Hidden pairs box is not valid');
+    return schema;
   }
   for (const [_, cells] of sepCells) {
     if (cells.size === 0) {
-      throw new Error('Hidden pairs box is not valid');
+      return schema;
     }
   }
   for (const cell of totalCells) {
@@ -1101,4 +1101,188 @@ export function hiddenPairsBox(schema: SudokuSchema, box: number, digits: Digit[
     );
   }
   return { ...schema, cells };
+}
+
+export function setGroupCandidatesRow(
+  schema: SudokuSchema,
+  digit: Digit,
+  positions: CellPosition[]
+): SudokuSchema {
+  if (positions.length < 2) {
+    return schema;
+  }
+  const position = positions[0];
+  if (!positions.every((p) => p.row === position.row)) {
+    return schema;
+  }
+  if (
+    !positions.every((p) => getCell(schema, p).cornerCandidates?.some((c) => c.digit === digit))
+  ) {
+    return schema;
+  }
+  const cells = cloneCells(schema.cells);
+  for (let c = 0; c < 9; c++) {
+    const cell = cells[position.row][c];
+    if (positions.some((p) => p.col === c)) {
+      continue;
+    }
+    if (cell.cornerCandidates?.some((c) => c.digit === digit)) {
+      cell.cornerCandidates = cell.cornerCandidates?.filter((c) => c.digit !== digit);
+    }
+  }
+  return { ...schema, cells };
+}
+
+export function checkGroupCandidatesRow(
+  schema: SudokuSchema,
+  digit: Digit,
+  positions: CellPosition[]
+): boolean {
+  if (positions.length < 2) {
+    return false;
+  }
+  const position = positions[0];
+  if (!positions.every((p) => p.row === position.row)) {
+    return false;
+  }
+  if (
+    !positions.every((p) => getCell(schema, p).cornerCandidates?.some((c) => c.digit === digit))
+  ) {
+    return false;
+  }
+  for (let c = 0; c < 9; c++) {
+    if (positions.some((p) => position.col === c)) {
+      continue;
+    }
+    if (
+      schema.cells[position.row][c].digit === digit ||
+      schema.cells[position.row][c].cornerCandidates?.some((c) => c.digit === digit)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function setGroupCandidatesCol(
+  schema: SudokuSchema,
+  digit: Digit,
+  positions: CellPosition[]
+): SudokuSchema {
+  if (positions.length < 2) {
+    return schema;
+  }
+  const position = positions[0];
+  if (!positions.every((p) => p.col === position.col)) {
+    return schema;
+  }
+  if (
+    !positions.every((p) => getCell(schema, p).cornerCandidates?.some((c) => c.digit === digit))
+  ) {
+    return schema;
+  }
+  const cells = cloneCells(schema.cells);
+  for (let r = 0; r < 9; r++) {
+    const cell = cells[r][position.col];
+    if (positions.some((p) => p.row === r)) {
+      continue;
+    }
+    if (cell.cornerCandidates?.some((c) => c.digit === digit)) {
+      cell.cornerCandidates = cell.cornerCandidates?.filter((c) => c.digit !== digit);
+    }
+  }
+  return { ...schema, cells };
+}
+
+export function checkGroupCandidatesCol(
+  schema: SudokuSchema,
+  digit: Digit,
+  positions: CellPosition[]
+) {
+  if (positions.length < 2) {
+    return false;
+  }
+  const position = positions[0];
+  if (!positions.every((p) => p.col === position.col)) {
+    return false;
+  }
+  if (
+    !positions.every((p) => getCell(schema, p).cornerCandidates?.some((c) => c.digit === digit))
+  ) {
+    return false;
+  }
+  for (let r = 0; r < 9; r++) {
+    if (positions.some((p) => position.row === r)) {
+      continue;
+    }
+    if (
+      schema.cells[r][position.col].digit === digit ||
+      schema.cells[r][position.col].cornerCandidates?.some((c) => c.digit === digit)
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function setGroupCandidatesBox(
+  schema: SudokuSchema,
+  digit: Digit,
+  positions: CellPosition[]
+): SudokuSchema {
+  if (positions.length < 2) {
+    return schema;
+  }
+  const position = positions[0];
+  if (!positions.every((p) => p.box === position.box)) {
+    return schema;
+  }
+  if (
+    !positions.every((p) => getCell(schema, p).cornerCandidates?.some((c) => c.digit === digit))
+  ) {
+    return schema;
+  }
+  const cells = cloneCells(schema.cells);
+  const boxPositions = getBoxRange(position.box);
+  for (const position of boxPositions) {
+    if (positions.some((p) => p.row === position.row && p.col === position.col)) {
+      continue;
+    }
+    if (cells[position.row][position.col].cornerCandidates?.some((c) => c.digit === digit)) {
+      cells[position.row][position.col].cornerCandidates = cells[position.row][
+        position.col
+      ].cornerCandidates?.filter((c) => c.digit !== digit);
+    }
+  }
+  return { ...schema, cells };
+}
+
+export function checkGroupCandidatesBox(
+  schema: SudokuSchema,
+  digit: Digit,
+  positions: CellPosition[]
+): boolean {
+  if (positions.length < 2) {
+    return false;
+  }
+  const position = positions[0];
+  if (!positions.every((p) => p.box === position.box)) {
+    return false;
+  }
+  if (
+    !positions.every((p) => getCell(schema, p).cornerCandidates?.some((c) => c.digit === digit))
+  ) {
+    return false;
+  }
+  const boxRange = getBoxRange(position.box);
+  for (const position of boxRange) {
+    if (positions.some((p) => position.row === p.row && position.col === p.col)) {
+      continue;
+    }
+    const cell = getCell(schema, position);
+    if (cell.digit === digit || cell.cornerCandidates?.some((c) => c.digit === digit)) {
+      return false;
+    }
+  }
+  return true;
 }
