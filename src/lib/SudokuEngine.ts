@@ -54,6 +54,7 @@ export function getRelatedRange(row: number, col: number): CellPosition[] {
 export interface Candidate {
   digit: Digit;
   color?: CandidateColor;
+  hasConflict?: boolean;
 }
 
 export interface Cell {
@@ -75,7 +76,6 @@ export interface Cell {
 
   // 错误状态
   hasConflict?: boolean; // 是否有冲突
-  conflictWith?: CellPosition[]; // 冲突的单元格位置
 }
 
 export interface LinkEndpoint {
@@ -110,6 +110,126 @@ export interface SudokuSchema {
   links: Link[];
 
   superLinks: SuperLink[];
+}
+
+export function fillCandidates(cells: Cell[][], row: number, col: number) {
+  if (
+    cells[row][col].isGiven ||
+    cells[row][col].digit ||
+    !(cells[row][col].cornerCandidates && cells[row][col].cornerCandidates.length > 0)
+  ) {
+    return;
+  }
+  const digits: Digit[] = [];
+  for (const cell of getRelatedRange(row, col)) {
+    if (cells[cell.row][cell.col].digit) {
+      digits.push(cells[cell.row][cell.col].digit);
+    }
+  }
+  const candidates: Candidate[] = [];
+  for (let i = 1; i <= 9; i++) {
+    if (digits.includes(i as Digit)) {
+      continue;
+    }
+    candidates.push({ digit: i as Digit });
+  }
+  cells[row][col].cornerCandidates = candidates;
+}
+
+// 设置数值并且移除冲突的后续数
+export function setCellInplace(cells: Cell[][], row: number, col: number, digit: Digit) {
+  if (cells[row][col].isGiven || cells[row][col].digit) {
+    return;
+  }
+  let hasConflict = false;
+  for (const position of getRelatedRange(row, col)) {
+    if (cells[position.row][position.col].digit === digit) {
+      cells[row][col].hasConflict = true;
+      hasConflict = true;
+    } else if (cells[position.row][position.col].cornerCandidates) {
+      cells[position.row][position.col].cornerCandidates = cells[position.row][
+        position.col
+      ].cornerCandidates.filter((c) => c.digit !== digit);
+    }
+  }
+  cells[row][col].cornerCandidates = null;
+  cells[row][col].digit = digit;
+  cells[row][col].hasConflict = hasConflict;
+}
+
+// 取消数值,并且填充当前格的后续数
+export function unsetCellInplace(cells: Cell[][], row: number, col: number) {
+  if (!cells[row][col].digit || cells[row][col].isGiven) {
+    return;
+  }
+  const digit = cells[row][col].digit;
+  cells[row][col].digit = null;
+  cells[row][col].cornerCandidates = null;
+  cells[row][col].hasConflict = false;
+  fillCandidates(cells, row, col);
+  for (const position of getRelatedRange(row, col)) {
+    if (cells[position.row][position.col].digit === digit) {
+      if (checkConflict(cells, position.row, position.col, digit)) {
+        cells[position.row][position.col].hasConflict = true;
+      } else {
+        cells[position.row][position.col].hasConflict = false;
+      }
+    } else {
+      addCandidateInplace(cells, position.row, position.col, cells[row][col].digit, true);
+    }
+  }
+}
+
+export function addCandidateInplace(
+  cells: Cell[][],
+  row: number,
+  col: number,
+  digit: Digit,
+  check: boolean = false // 开启的时候，如果冲突则不添加候选数；关闭的时候，添加后续数
+) {
+  if (check) {
+    // 存在其他冲突的相同值, 不添加后续数
+    if (checkConflict(cells, row, col, digit)) {
+      return;
+    }
+    // 不存在冲突的相同值, 添加后续数
+    if (cells[row][col].digit === digit && cells[row][col].hasConflict) {
+      cells[row][col].hasConflict = false;
+    } else if (
+      cells[row][col].cornerCandidates === null ||
+      cells[row][col].cornerCandidates.every((c) => c.digit !== digit)
+    ) {
+      // 不存在其他相关格子有 digit, 添加后续数
+      cells[row][col].cornerCandidates.push({ digit });
+    }
+  }
+
+  if (cells[row][col].digit === digit) {
+    if (checkConflict(cells, row, col, digit)) {
+      cells[row][col].hasConflict = true;
+    } else {
+      cells[row][col].hasConflict = false;
+    }
+  } else if (
+    cells[row][col].cornerCandidates === null ||
+    cells[row][col].cornerCandidates.every((c) => c.digit !== digit)
+  ) {
+    // 不存在其他相关格子有 digit, 添加后续数
+    cells[row][col].cornerCandidates.push({
+      digit,
+      hasConflict: checkConflict(cells, row, col, digit),
+    });
+  }
+}
+
+export function checkConflict(cells: Cell[][], row: number, col: number, digit: Digit): boolean {
+  for (const position of getRelatedRange(row, col)) {
+    if (cells[position.row][position.col].digit === digit) {
+      // 存在其他相关格子有 digit, 不添加后续数
+      return true;
+    }
+  }
+  return false;
 }
 
 function abstractSet(
@@ -305,6 +425,22 @@ export function setHighlightedXY(schema: SudokuSchema): SudokuSchema {
 
 export function addHighlightedXY(schema: SudokuSchema): SudokuSchema {
   const cond = (cell: Cell) => cell.cornerCandidates && cell.cornerCandidates.length === 2;
+  return abstractAddHighlighted(schema, cond);
+}
+
+export function setHighlightedCells(schema: SudokuSchema, positions: CellPosition[]): SudokuSchema {
+  const cond = (cell: Cell) =>
+    positions.some(
+      (position) => position.row === cell.position.row && position.col === cell.position.col
+    );
+  return abstractSetHighlighted(schema, cond);
+}
+
+export function addHighlightedCells(schema: SudokuSchema, positions: CellPosition[]): SudokuSchema {
+  const cond = (cell: Cell) =>
+    positions.some(
+      (position) => position.row === cell.position.row && position.col === cell.position.col
+    );
   return abstractAddHighlighted(schema, cond);
 }
 
@@ -698,21 +834,6 @@ export function checkStrongLink(schema: SudokuSchema, link: Link): boolean {
   return false;
 }
 
-export function setDigit(cells: Cell[][], row: number, col: number, digit: Digit) {
-  getRelatedRange(row, col).forEach(({ row, col }) => {
-    if (cells[row][col].cornerCandidates) {
-      cells[row][col].cornerCandidates = cells[row][col].cornerCandidates.filter(
-        (c) => c.digit !== digit
-      );
-    }
-  });
-  cells[row][col] = {
-    ...cells[row][col],
-    cornerCandidates: null,
-    digit: digit,
-  };
-}
-
 export function cloneCells(cells: Cell[][]): Cell[][] {
   return cells.map((row) =>
     row.map((cell) => ({
@@ -729,7 +850,7 @@ export function autofillUniqueCandidates(schema: SudokuSchema): SudokuSchema {
       const r = Math.floor(j / 9);
       const c = j % 9;
       if (!cells[r][c].isGiven && cells[r][c].cornerCandidates.length === 1) {
-        setDigit(cells, r, c, cells[r][c].cornerCandidates[0].digit);
+        setCellInplace(cells, r, c, cells[r][c].cornerCandidates[0].digit);
         hasUnique = true;
         break;
       }
@@ -765,7 +886,7 @@ export function lastDigitRow(schema: SudokuSchema, row: number, digit: Digit): S
   if (cnt !== 1 || col === -1) {
     return schema;
   }
-  setDigit(cells, row, col, digit);
+  setCellInplace(cells, row, col, digit);
   return { ...schema, cells };
 }
 
@@ -785,7 +906,7 @@ export function lastDigitCol(schema: SudokuSchema, col: number, digit: Digit): S
   if (cnt !== 1 || row === -1) {
     return schema;
   }
-  setDigit(cells, row, col, digit);
+  setCellInplace(cells, row, col, digit);
   return { ...schema, cells };
 }
 
@@ -808,7 +929,7 @@ export function lastDigitBox(schema: SudokuSchema, box: number, digit: Digit): S
   if (cnt !== 1 || row === -1 || col === -1) {
     return schema;
   }
-  setDigit(cells, row, col, digit);
+  setCellInplace(cells, row, col, digit);
   return { ...schema, cells };
 }
 
@@ -1286,4 +1407,56 @@ export function checkGroupCandidatesBox(
     }
   }
   return true;
+}
+
+export function setSelectRowInplace(cells: Cell[][], row: number) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (r === row) {
+        cells[r][c].isSelected = true;
+      } else {
+        cells[r][c].isSelected = false;
+      }
+    }
+  }
+}
+
+export function setSelectColInplace(cells: Cell[][], col: number) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (c === col) {
+        cells[r][c].isSelected = true;
+      } else {
+        cells[r][c].isSelected = false;
+      }
+    }
+  }
+}
+
+export function setSelectBoxInplace(cells: Cell[][], box: number) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (cells[r][c].position.box === box) {
+        cells[r][c].isSelected = true;
+      } else {
+        cells[r][c].isSelected = false;
+      }
+    }
+  }
+}
+
+export function setSelectCellInplace(cells: Cell[][], row: number, col: number) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (r === row && c === col) {
+        cells[r][c].isSelected = true;
+      } else {
+        cells[r][c].isSelected = false;
+      }
+    }
+  }
+}
+
+export function addHighlightedCellInplace(cells: Cell[][], row: number, col: number) {
+  cells[row][col].isHighlighted = true;
 }

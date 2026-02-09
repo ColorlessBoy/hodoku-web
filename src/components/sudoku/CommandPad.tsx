@@ -1,95 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  SudokuSchema,
-  CellPosition,
-  Digit,
-  CellColor,
-  CandidateColor,
-  Link,
-  setDigit,
-  addCandidate,
-  subCandidate,
-  addCandidates,
-  subCandidates,
-  createLink,
-  addCellColor,
-  addCandidateColor,
-  setHighlightedDigit,
-  setHighlightedRow,
-  setHighlightedCol,
-  setHighlightedBox,
-  clearAllHighlighted,
-  setSelectedCell,
-  setSelectedRow,
-  setSelectedCol,
-  setSelectedBox,
-  getBoxRange,
-  autofillUniqueCandidates,
-  lastDigitRow,
-  lastDigitCol,
-  lastDigitBox,
-  nakedPair,
-  nakedPairsRow,
-  hiddenPairsRow,
-  nakedPairsCol,
-  hiddenPairsCol,
-  nakedPairsBox,
-  hiddenPairsBox,
-  setGroupCandidatesRow,
-  setGroupCandidatesCol,
-  setGroupCandidatesBox,
-  getBoxIndex,
-} from '@/types/sudoku';
-import { validateLink, validateSet, validateClear } from '@/lib/sudokuOperator';
-import { solve, applySolutionToSchema } from '@/lib/sudokuSolver';
-import { generatePuzzle, gridToSchema } from '@/lib/sudokuGenerator';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { SudokuSchema } from '@/types/sudoku';
 import { cloneSchema } from '@/lib/schemaAdapter';
+import { executeCommands } from '@/lib/CmdEngine';
 import { cn } from '@/lib/utils';
 
 interface CommandPadProps {
   schema: SudokuSchema;
-  selectCell: (position: CellPosition | null) => void;
-  setCellValue: (position: CellPosition, value: Digit | null) => void;
-  toggleCornerCandidate: (position: CellPosition, digit: Digit) => void;
-  setCellColor: (position: CellPosition, color: CellColor) => void;
-  setCandidateColor: (position: CellPosition, digit: Digit, color: CandidateColor) => void;
-  addLink: (link: Link) => void;
-  clearLinks: () => void;
-  clearCell: (position: CellPosition) => void;
   replaceSchema: (next: SudokuSchema) => void;
-}
-
-type CmdResult = { ok: boolean; msg?: string };
-
-const clampRC = (n: number) => Math.max(1, Math.min(9, n));
-const toZeroIdx = (n: number) => clampRC(n) - 1;
-
-function parsePos(token: string): CellPosition | null {
-  const t = token.trim().toLowerCase();
-  const m1 = t.match(/^([1-9])([1-9])$/);
-  if (m1) {
-    const row = toZeroIdx(Number(m1[1]));
-    const col = toZeroIdx(Number(m1[2]));
-    const box = getBoxIndex(row, col);
-    return { row, col, box };
-  }
-  return null;
-}
-
-function parsePosDigit(token: string): { pos: CellPosition; digit: Digit } | null {
-  const t = token.trim().toLowerCase();
-  const m = t.match(/^([1-9])([1-9])([1-9])$/);
-  if (m) {
-    const row = toZeroIdx(Number(m[1]));
-    const col = toZeroIdx(Number(m[2]));
-    const box = getBoxIndex(row, col);
-    const digit = Number(m[3]) as Digit;
-    return {
-      pos: { row, col, box },
-      digit,
-    };
-  }
-  return null;
 }
 
 const useLocalStore = <T,>(key: string, initial: T) => {
@@ -113,14 +30,6 @@ const useLocalStore = <T,>(key: string, initial: T) => {
 
 export const CommandPad: React.FC<CommandPadProps> = ({
   schema,
-  selectCell,
-  setCellValue,
-  toggleCornerCandidate,
-  setCellColor,
-  setCandidateColor,
-  addLink,
-  clearLinks,
-  clearCell,
   replaceSchema,
 }) => {
   const [input, setInput] = useState('');
@@ -197,276 +106,48 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     [setHistory]
   );
 
-  const execSingle = useCallback(
-    (raw: string): CmdResult => {
-      const s = raw.trim();
-      if (!s) return { ok: false, msg: '空命令' };
-      const parts = s.split(/\s+/);
-      const cmd = parts[0].toLowerCase();
+  // 使用 CmdEngine 处理命令
+  const handleExec = useCallback(() => {
+    if (!input.trim()) return;
 
-      if (cmd === 'u' || cmd === 'undo') {
-        doUndo();
-        return { ok: true };
-      }
-      if (cmd === 'r' || cmd === 'redo') {
-        doRedo();
-        return { ok: true };
-      }
-
-      // s r1c1 5 - 设置格子的值
-      if (cmd === 's') {
-        const pos = parsePos(parts[1]);
-        const d = Number(parts[2]);
-        if (!pos || !(d >= 1 && d <= 9)) {
-          return { ok: false, msg: '用法: s r1c1 5' };
-        }
-        const res = validateSet(schema, pos, d as Digit);
-        if (!res.ok) return res;
-        pushUndo();
-        setCellValue(pos, d as Digit);
-        return { ok: true };
-      }
-
-      // c r1c1 - 清除格子
-      if (cmd === 'c' || cmd === 'clear') {
-        const pos = parsePos(parts[1]);
-        if (!pos) {
-          return { ok: false, msg: '用法: c r1c1' };
-        }
-        const res = validateClear(schema, pos);
-        if (!res.ok) return res;
-        pushUndo();
-        clearCell(pos);
-        return { ok: true };
-      }
-
-      // k r1c1 3 或 k r1c1 - 切换候选数（有数字则切换，无则点击格子）
-      if (cmd === 'k') {
-        const pos = parsePos(parts[1]);
-        if (!pos) {
-          return { ok: false, msg: '用法: k r1c1 [数字]' };
-        }
-        pushUndo();
-        if (parts[2]) {
-          const d = Number(parts[2]);
-          if (d >= 1 && d <= 9) {
-            toggleCornerCandidate(pos, d as Digit);
-          }
-        } else {
-          selectCell(pos);
-        }
-        return { ok: true };
-      }
-
-      // h 1-9 或 h off - 高亮数字
-      if (cmd === 'h') {
-        const v = parts[1]?.toLowerCase();
-        if (!v || v === 'off') {
-          replaceSchema(clearAllHighlighted(schema));
-        } else {
-          const d = Number(v);
-          if (d >= 1 && d <= 9) {
-            replaceSchema(setHighlightedDigit(schema, d as Digit));
-          }
-        }
-        return { ok: true };
-      }
-
-      // H 1-9 - 高亮行
-      if (cmd === 'H' && parts[1]) {
-        const r = Number(parts[1]);
-        if (r >= 1 && r <= 9) {
-          replaceSchema(setHighlightedRow(schema, r - 1));
-          return { ok: true };
-        }
-        return { ok: false, msg: '用法: H 1-9' };
-      }
-
-      // V 1-9 - 高亮列
-      if (cmd === 'V' && parts[1]) {
-        const c = Number(parts[1]);
-        if (c >= 1 && c <= 9) {
-          replaceSchema(setHighlightedCol(schema, c - 1));
-          return { ok: true };
-        }
-        return { ok: false, msg: '用法: V 1-9' };
-      }
-
-      // B 1-9 - 高亮宫
-      if (cmd === 'B' && parts[1]) {
-        const b = Number(parts[1]);
-        if (b >= 1 && b <= 9) {
-          replaceSchema(setHighlightedBox(schema, b - 1));
-          return { ok: true };
-        }
-        return { ok: false, msg: '用法: B 1-9' };
-      }
-
-      // cc r1c1 3 - 设置单元格颜色
-      if (cmd === 'cc') {
-        const pos = parsePos(parts[1]);
-        const k = Number(parts[2]);
-        if (!pos) {
-          return { ok: false, msg: '用法: cc r1c1 1-8' };
-        }
-        const color = k >= 1 && k <= 8 ? (k as CellColor) : null;
-        replaceSchema(addCellColor(schema, pos.row, pos.col, color));
-        return { ok: true };
-      }
-
-      // kc r1c1 5 2 - 设置候选数颜色
-      if (cmd === 'kc') {
-        const pos = parsePos(parts[1]);
-        const d = Number(parts[2]);
-        const k = Number(parts[3]);
-        if (!pos || !(d >= 1 && d <= 9)) {
-          return { ok: false, msg: '用法: kc r1c1 5 1-6' };
-        }
-        const color = k >= 1 && k <= 6 ? (k as CandidateColor) : null;
-        replaceSchema(addCandidateColor(schema, pos.row, pos.col, d as Digit, color));
-        return { ok: true };
-      }
-
-      // l r1c1:5 r2c2:5 strong|weak - 添加链
-      if (cmd === 'l' || cmd === 'link') {
-        const a = parsePosDigit(parts[1] || '');
-        const b = parsePosDigit(parts[2] || '');
-        const t = (parts[3] || '').toLowerCase();
-        if (!a || !b) {
-          return { ok: false, msg: '用法: l r1c1:5 r2c2:5 [strong|weak]' };
-        }
-        const link = createLink(
-          a.digit,
-          a.pos.row,
-          a.pos.col,
-          b.digit,
-          b.pos.row,
-          b.pos.col,
-          t === 'strong' || t === 's'
-        );
-        const res = validateLink(schema, link);
-        if (!res.ok) return res;
-        pushUndo();
-        addLink(link);
-        return { ok: true };
-      }
-
-      // lc - 清除链
-      if (cmd === 'lc') {
-        clearLinks();
-        return { ok: true };
-      }
-
-      // solve - 求解
-      if (cmd === 'solve') {
-        const solution = solve(schema);
-        if (!solution) return { ok: false, msg: '当前题目无解' };
-        pushUndo();
-        replaceSchema(applySolutionToSchema(schema, solution));
-        return { ok: true };
-      }
-
-      // new 或 generate - 生成新题目
-      if (cmd === 'new' || cmd === 'generate') {
-        const n = parseInt(parts[1] ?? '', 10);
-        const minClues = Number.isNaN(n) ? 25 : Math.max(17, Math.min(81, n));
-        pushUndo();
-        replaceSchema(gridToSchema(generatePuzzle(minClues)));
-        return { ok: true };
-      }
-
-      // auto - 自动填充唯一候选数
-      if (cmd === 'auto') {
-        const result = autofillUniqueCandidates(schema);
-        if (result === schema) {
-          return { ok: false, msg: '没有可自动填充的格子' };
-        }
-        pushUndo();
-        replaceSchema(result);
-        return { ok: true };
-      }
-
-      // last r 1-9 - 行最后一位
-      if (cmd === 'last' && parts[1]) {
-        const unit = parts[1].toLowerCase();
-        const idx = Number(parts[2]);
-        if (!(idx >= 1 && idx <= 9)) {
-          return { ok: false, msg: '用法: last r|c|b 1-9 1-9' };
-        }
-        const d = Number(parts[3]);
-        if (!(d >= 1 && d <= 9)) {
-          return { ok: false, msg: '用法: last r|c|b 1-9 1-9' };
-        }
-        let result = schema;
-        if (unit === 'r') {
-          result = lastDigitRow(schema, idx - 1, d as Digit);
-        } else if (unit === 'c') {
-          result = lastDigitCol(schema, idx - 1, d as Digit);
-        } else if (unit === 'b') {
-          result = lastDigitBox(schema, idx - 1, d as Digit);
-        }
-        if (result === schema) {
-          return { ok: false, msg: '没有可填充的格子' };
-        }
-        pushUndo();
-        replaceSchema(result);
-        return { ok: true };
-      }
-
-      // nakedpair r1c1:5 r2c2:6 - 裸对
-      if (cmd === 'np') {
-        const a = parsePosDigit(parts[1] || '');
-        const b = parsePosDigit(parts[2] || '');
-        if (!a || !b) {
-          return { ok: false, msg: '用法: np r1c1:5 r2c2:6' };
-        }
-        const result = nakedPair(schema, a.digit, b.digit, a.pos, b.pos);
-        if (result === schema) {
-          return { ok: false, msg: '不满足裸对条件' };
-        }
-        pushUndo();
-        replaceSchema(result);
-        return { ok: true };
-      }
-
-      return { ok: false, msg: '未知命令' };
-    },
-    [
-      addLink,
-      clearCell,
-      clearLinks,
-      doRedo,
-      doUndo,
-      pushUndo,
-      replaceSchema,
-      schema,
-      selectCell,
-      setCellColor,
-      setCellValue,
-      setCandidateColor,
-      toggleCornerCandidate,
-    ]
-  );
-  const exec = useCallback(() => {
-    const cmds = input
-      .split(';')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    let lastRes: CmdResult = { ok: true };
-    for (const c of cmds) {
-      lastRes = execSingle(c);
-      if (!lastRes.ok) break;
+    // 检查是否为 undo/redo 命令
+    const trimmed = input.trim().toLowerCase();
+    if (trimmed === 'u' || trimmed === 'undo') {
+      doUndo();
+      addHistory(input);
+      setInput('');
+      return;
     }
+    if (trimmed === 'r' || trimmed === 'redo') {
+      doRedo();
+      addHistory(input);
+      setInput('');
+      return;
+    }
+
+    // 使用 CmdEngine 执行命令
+    pushUndo();
+    const { result, finalSchema } = executeCommands(schema, input);
+
+    if (result.type === 'error') {
+      // 执行失败，撤销 pushUndo
+      setUndoStack((prev) => prev.slice(0, -1));
+      // 可以在这里显示错误消息
+      console.error('Command failed:', result.msg);
+    } else {
+      // 执行成功，更新 schema
+      replaceSchema(finalSchema);
+    }
+
     addHistory(input);
     setInput('');
     inputRef.current?.focus();
-    return lastRes;
-  }, [addHistory, execSingle, input]);
+  }, [input, schema, pushUndo, doUndo, doRedo, addHistory, setUndoStack, replaceSchema]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
-        exec();
+        handleExec();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setHistoryIdx((idx) => {
@@ -485,7 +166,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         });
       }
     },
-    [exec, history]
+    [handleExec, history]
   );
 
   return (
@@ -505,7 +186,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
             'px-3 py-2 rounded-md text-sm font-medium',
             'bg-primary text-primary-foreground hover:bg-primary/90'
           )}
-          onClick={exec}
+          onClick={handleExec}
         >
           执行
         </button>
@@ -547,20 +228,21 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         )}
       </div>
       <div className="mt-3 text-[11px] text-muted-foreground space-y-1">
-        <div>s r1c1 5 - 设置格子值</div>
-        <div>c r1c1 - 清除格子</div>
-        <div>k r1c1 [3] - 切换候选数</div>
+        <div>s 11 5 - 设置格子值</div>
+        <div>c 11 - 清除格子</div>
+        <div>k 11 [3] - 切换候选数</div>
         <div>h 1-9/off - 高亮数字</div>
-        <div>H 1-9 - 高亮行</div>
-        <div>V 1-9 - 高亮列</div>
-        <div>B 1-9 - 高亮宫</div>
-        <div>cc r1c1 1-8 - 单元格颜色</div>
-        <div>kc r1c1 5 1-6 - 候选数颜色</div>
-        <div>l r1c1:5 r2c2:5 [s|w] - 添加链</div>
-        <div>lc - 清除链</div>
+        <div>hr 1-9 - 高亮行</div>
+        <div>hc 1-9 - 高亮列</div>
+        <div>hb 1-9 - 高亮宫</div>
+        <div>cc 11 1-8 - 单元格颜色</div>
+        <div>cn 11 5 1-6 - 候选数颜色</div>
+        <div>lks 115 225  - 添加强链</div>
+        <div>lkw 115 225  - 添加弱链</div>
+        <div>lkc 11 22 - 清除链</div>
         <div>auto - 自动填充</div>
-        <div>last r|c|b 1-9 1-9 - 最后一位</div>
-        <div>np r1c1:5 r2c2:6 - 裸对</div>
+        <div>l[r|c|b] 1-9 1-9 - 最后一位</div>
+        <div>np 11 22 5 6 - 裸对</div>
         <div>u/r - 撤销/重做</div>
       </div>
     </div>

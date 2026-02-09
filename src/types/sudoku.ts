@@ -22,7 +22,7 @@ export {
   isValidEndpoint,
   checkWeakLink,
   checkStrongLink,
-  setDigit,
+  setCellInplace as setDigit,
   cloneCells,
   autofillUniqueCandidates,
   lastDigitRow,
