@@ -3,13 +3,47 @@ import {
   SudokuSchema,
   CellPosition,
   Digit,
-  CandidateColor,
   CellColor,
+  CandidateColor,
   Link,
+  setDigit,
+  addCandidate,
+  subCandidate,
+  addCandidates,
+  subCandidates,
+  createLink,
+  addCellColor,
+  addCandidateColor,
+  setHighlightedDigit,
+  setHighlightedRow,
+  setHighlightedCol,
+  setHighlightedBox,
+  clearAllHighlighted,
+  setSelectedCell,
+  setSelectedRow,
+  setSelectedCol,
+  setSelectedBox,
+  getBoxRange,
+  autofillUniqueCandidates,
+  lastDigitRow,
+  lastDigitCol,
+  lastDigitBox,
+  nakedPair,
+  nakedPairsRow,
+  hiddenPairsRow,
+  nakedPairsCol,
+  hiddenPairsCol,
+  nakedPairsBox,
+  hiddenPairsBox,
+  setGroupCandidatesRow,
+  setGroupCandidatesCol,
+  setGroupCandidatesBox,
+  getBoxIndex,
 } from '@/types/sudoku';
 import { validateLink, validateSet, validateClear } from '@/lib/sudokuOperator';
 import { solve, applySolutionToSchema } from '@/lib/sudokuSolver';
-import { generatePuzzle, gridToRenderSchema } from '@/lib/sudokuGenerator';
+import { generatePuzzle, gridToSchema } from '@/lib/sudokuGenerator';
+import { cloneSchema } from '@/lib/schemaAdapter';
 import { cn } from '@/lib/utils';
 
 interface CommandPadProps {
@@ -17,15 +51,8 @@ interface CommandPadProps {
   selectCell: (position: CellPosition | null) => void;
   setCellValue: (position: CellPosition, value: Digit | null) => void;
   toggleCornerCandidate: (position: CellPosition, digit: Digit) => void;
-  toggleCenterCandidate: (position: CellPosition, digit: Digit) => void;
   setCellColor: (position: CellPosition, color: CellColor) => void;
-  setCandidateColor: (
-    position: CellPosition,
-    digit: Digit,
-    color: CandidateColor,
-    isCorner: boolean
-  ) => void;
-  setHighlightedDigit: (digit: Digit | null) => void;
+  setCandidateColor: (position: CellPosition, digit: Digit, color: CandidateColor) => void;
   addLink: (link: Link) => void;
   clearLinks: () => void;
   clearCell: (position: CellPosition) => void;
@@ -39,20 +66,27 @@ const toZeroIdx = (n: number) => clampRC(n) - 1;
 
 function parsePos(token: string): CellPosition | null {
   const t = token.trim().toLowerCase();
-  const m1 = t.match(/^r([1-9])c([1-9])$/);
-  if (m1) return { row: toZeroIdx(Number(m1[1])), col: toZeroIdx(Number(m1[2])) };
-  const m2 = t.match(/^([1-9])\s*,\s*([1-9])$/);
-  if (m2) return { row: toZeroIdx(Number(m2[1])), col: toZeroIdx(Number(m2[2])) };
+  const m1 = t.match(/^([1-9])([1-9])$/);
+  if (m1) {
+    const row = toZeroIdx(Number(m1[1]));
+    const col = toZeroIdx(Number(m1[2]));
+    const box = getBoxIndex(row, col);
+    return { row, col, box };
+  }
   return null;
 }
 
 function parsePosDigit(token: string): { pos: CellPosition; digit: Digit } | null {
   const t = token.trim().toLowerCase();
-  const m = t.match(/^r([1-9])c([1-9]):([1-9])$/);
+  const m = t.match(/^([1-9])([1-9])([1-9])$/);
   if (m) {
+    const row = toZeroIdx(Number(m[1]));
+    const col = toZeroIdx(Number(m[2]));
+    const box = getBoxIndex(row, col);
+    const digit = Number(m[3]) as Digit;
     return {
-      pos: { row: toZeroIdx(Number(m[1])), col: toZeroIdx(Number(m[2])) },
-      digit: Number(m[3]) as Digit,
+      pos: { row, col, box },
+      digit,
     };
   }
   return null;
@@ -82,10 +116,8 @@ export const CommandPad: React.FC<CommandPadProps> = ({
   selectCell,
   setCellValue,
   toggleCornerCandidate,
-  toggleCenterCandidate,
   setCellColor,
   setCandidateColor,
-  setHighlightedDigit,
   addLink,
   clearLinks,
   clearCell,
@@ -120,10 +152,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
   }, [schema]);
 
   const pushUndo = useCallback(() => {
-    const snap =
-      typeof structuredClone === 'function'
-        ? structuredClone(schema)
-        : JSON.parse(JSON.stringify(schema));
+    const snap = cloneSchema(schema);
     setUndoStack((prev) => [...prev, snap]);
     setRedoStack([]);
   }, [schema, setUndoStack, setRedoStack]);
@@ -134,10 +163,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       const nextUndo = [...prev];
       const last = nextUndo.pop()!;
       setRedoStack((rp) => {
-        const cur =
-          typeof structuredClone === 'function'
-            ? structuredClone(schema)
-            : JSON.parse(JSON.stringify(schema));
+        const cur = cloneSchema(schema);
         return [...rp, cur];
       });
       replaceSchema(last);
@@ -151,10 +177,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       const nextRedo = [...prev];
       const last = nextRedo.pop()!;
       setUndoStack((up) => {
-        const cur =
-          typeof structuredClone === 'function'
-            ? structuredClone(schema)
-            : JSON.parse(JSON.stringify(schema));
+        const cur = cloneSchema(schema);
         return [...up, cur];
       });
       replaceSchema(last);
@@ -181,130 +204,146 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       const parts = s.split(/\s+/);
       const cmd = parts[0].toLowerCase();
 
-      if (cmd === 'undo') {
+      if (cmd === 'u' || cmd === 'undo') {
         doUndo();
         return { ok: true };
       }
-      if (cmd === 'redo') {
+      if (cmd === 'r' || cmd === 'redo') {
         doRedo();
         return { ok: true };
       }
 
-      if (cmd === 'set') {
-        const rest = parts.slice(1);
-        const updates: { pos: CellPosition; d: Digit }[] = [];
-        for (let i = 0; i + 1 < rest.length; i += 2) {
-          const pos = parsePos(rest[i]);
-          const d = Number(rest[i + 1]);
-          if (!pos || !(d >= 1 && d <= 9)) continue;
-          const res = validateSet(schema, pos, d as Digit);
-          if (!res.ok) return res;
-          updates.push({ pos, d: d as Digit });
+      // s r1c1 5 - 设置格子的值
+      if (cmd === 's') {
+        const pos = parsePos(parts[1]);
+        const d = Number(parts[2]);
+        if (!pos || !(d >= 1 && d <= 9)) {
+          return { ok: false, msg: '用法: s r1c1 5' };
         }
+        const res = validateSet(schema, pos, d as Digit);
+        if (!res.ok) return res;
         pushUndo();
-        updates.forEach(({ pos, d }) => setCellValue(pos, d));
+        setCellValue(pos, d as Digit);
         return { ok: true };
       }
 
-      if (cmd === 'clear') {
-        const rest = parts.slice(1);
-        const toClear: CellPosition[] = [];
-        for (let i = 0; i < rest.length; i++) {
-          const pos = parsePos(rest[i]);
-          if (!pos) continue;
-          const res = validateClear(schema, pos);
-          if (!res.ok) return res;
-          toClear.push(pos);
+      // c r1c1 - 清除格子
+      if (cmd === 'c' || cmd === 'clear') {
+        const pos = parsePos(parts[1]);
+        if (!pos) {
+          return { ok: false, msg: '用法: c r1c1' };
         }
+        const res = validateClear(schema, pos);
+        if (!res.ok) return res;
         pushUndo();
-        toClear.forEach((pos) => clearCell(pos));
+        clearCell(pos);
         return { ok: true };
       }
 
-      if (cmd === 'corner') {
-        pushUndo();
-        const rest = parts.slice(1);
-        for (let i = 0; i + 1 < rest.length; i += 2) {
-          const pos = parsePos(rest[i]);
-          const d = Number(rest[i + 1]);
-          if (!pos || !(d >= 1 && d <= 9)) continue;
-          toggleCornerCandidate(pos, d as Digit);
+      // k r1c1 3 或 k r1c1 - 切换候选数（有数字则切换，无则点击格子）
+      if (cmd === 'k') {
+        const pos = parsePos(parts[1]);
+        if (!pos) {
+          return { ok: false, msg: '用法: k r1c1 [数字]' };
         }
-        return { ok: true };
-      }
-
-      if (cmd === 'center') {
         pushUndo();
-        const rest = parts.slice(1);
-        for (let i = 0; i + 1 < rest.length; i += 2) {
-          const pos = parsePos(rest[i]);
-          const d = Number(rest[i + 1]);
-          if (!pos || !(d >= 1 && d <= 9)) continue;
-          toggleCenterCandidate(pos, d as Digit);
+        if (parts[2]) {
+          const d = Number(parts[2]);
+          if (d >= 1 && d <= 9) {
+            toggleCornerCandidate(pos, d as Digit);
+          }
+        } else {
+          selectCell(pos);
         }
         return { ok: true };
       }
 
-      if (cmd === 'cellcolor') {
-        pushUndo();
-        const rest = parts.slice(1);
-        for (let i = 0; i + 1 < rest.length; i += 2) {
-          const pos = parsePos(rest[i]);
-          const k = Number(rest[i + 1]);
-          if (!pos) continue;
-          const color = k >= 1 && k <= 8 ? (k as CellColor) : null;
-          setCellColor(pos, color as CellColor);
-        }
-        return { ok: true };
-      }
-
-      if (cmd === 'candcolor') {
-        pushUndo();
-        const rest = parts.slice(1);
-        for (let i = 0; i + 3 < rest.length; i += 4) {
-          const pos = parsePos(rest[i]);
-          const d = Number(rest[i + 1]);
-          const k = Number(rest[i + 2]);
-          const t = rest[i + 3].toLowerCase();
-          if (!pos || !(d >= 1 && d <= 9)) continue;
-          const color = k >= 1 && k <= 6 ? (k as CandidateColor) : null;
-          const isCorner = t === 'corner';
-          const isCenter = t === 'center';
-          if (!isCorner && !isCenter) continue;
-          setCandidateColor(pos, d as Digit, color as CandidateColor, isCorner);
-        }
-        return { ok: true };
-      }
-
-      if (cmd === 'highlight') {
+      // h 1-9 或 h off - 高亮数字
+      if (cmd === 'h') {
         const v = parts[1]?.toLowerCase();
         if (!v || v === 'off') {
-          setHighlightedDigit(null);
+          replaceSchema(clearAllHighlighted(schema));
         } else {
           const d = Number(v);
-          if (d >= 1 && d <= 9) setHighlightedDigit(d as Digit);
+          if (d >= 1 && d <= 9) {
+            replaceSchema(setHighlightedDigit(schema, d as Digit));
+          }
         }
         return { ok: true };
       }
 
-      if (cmd === 'select') {
-        const pos = parsePos(parts[1] || '');
-        if (pos) selectCell(pos);
+      // H 1-9 - 高亮行
+      if (cmd === 'H' && parts[1]) {
+        const r = Number(parts[1]);
+        if (r >= 1 && r <= 9) {
+          replaceSchema(setHighlightedRow(schema, r - 1));
+          return { ok: true };
+        }
+        return { ok: false, msg: '用法: H 1-9' };
+      }
+
+      // V 1-9 - 高亮列
+      if (cmd === 'V' && parts[1]) {
+        const c = Number(parts[1]);
+        if (c >= 1 && c <= 9) {
+          replaceSchema(setHighlightedCol(schema, c - 1));
+          return { ok: true };
+        }
+        return { ok: false, msg: '用法: V 1-9' };
+      }
+
+      // B 1-9 - 高亮宫
+      if (cmd === 'B' && parts[1]) {
+        const b = Number(parts[1]);
+        if (b >= 1 && b <= 9) {
+          replaceSchema(setHighlightedBox(schema, b - 1));
+          return { ok: true };
+        }
+        return { ok: false, msg: '用法: B 1-9' };
+      }
+
+      // cc r1c1 3 - 设置单元格颜色
+      if (cmd === 'cc') {
+        const pos = parsePos(parts[1]);
+        const k = Number(parts[2]);
+        if (!pos) {
+          return { ok: false, msg: '用法: cc r1c1 1-8' };
+        }
+        const color = k >= 1 && k <= 8 ? (k as CellColor) : null;
+        replaceSchema(addCellColor(schema, pos.row, pos.col, color));
         return { ok: true };
       }
 
-      if (cmd === 'link') {
+      // kc r1c1 5 2 - 设置候选数颜色
+      if (cmd === 'kc') {
+        const pos = parsePos(parts[1]);
+        const d = Number(parts[2]);
+        const k = Number(parts[3]);
+        if (!pos || !(d >= 1 && d <= 9)) {
+          return { ok: false, msg: '用法: kc r1c1 5 1-6' };
+        }
+        const color = k >= 1 && k <= 6 ? (k as CandidateColor) : null;
+        replaceSchema(addCandidateColor(schema, pos.row, pos.col, d as Digit, color));
+        return { ok: true };
+      }
+
+      // l r1c1:5 r2c2:5 strong|weak - 添加链
+      if (cmd === 'l' || cmd === 'link') {
         const a = parsePosDigit(parts[1] || '');
         const b = parsePosDigit(parts[2] || '');
         const t = (parts[3] || '').toLowerCase();
         if (!a || !b) {
-          return { ok: false, msg: '用法: link r1c1:5 r2c2:5 weak|strong' };
+          return { ok: false, msg: '用法: l r1c1:5 r2c2:5 [strong|weak]' };
         }
-        const link: ChainLink = {
-          from: { position: a.pos, candidate: a.digit },
-          to: { position: b.pos, candidate: b.digit },
-          isStrong: t === 'strong',
-        };
+        const link = createLink(
+          a.digit,
+          a.pos.row,
+          a.pos.col,
+          b.digit,
+          b.pos.row,
+          b.pos.col,
+          t === 'strong' || t === 's'
+        );
         const res = validateLink(schema, link);
         if (!res.ok) return res;
         pushUndo();
@@ -312,11 +351,13 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         return { ok: true };
       }
 
-      if (cmd === 'linkclear') {
+      // lc - 清除链
+      if (cmd === 'lc') {
         clearLinks();
         return { ok: true };
       }
 
+      // solve - 求解
       if (cmd === 'solve') {
         const solution = solve(schema);
         if (!solution) return { ok: false, msg: '当前题目无解' };
@@ -325,11 +366,62 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         return { ok: true };
       }
 
+      // new 或 generate - 生成新题目
       if (cmd === 'new' || cmd === 'generate') {
         const n = parseInt(parts[1] ?? '', 10);
         const minClues = Number.isNaN(n) ? 25 : Math.max(17, Math.min(81, n));
         pushUndo();
-        replaceSchema(gridToRenderSchema(generatePuzzle(minClues)));
+        replaceSchema(gridToSchema(generatePuzzle(minClues)));
+        return { ok: true };
+      }
+
+      // auto - 自动填充唯一候选数
+      if (cmd === 'auto') {
+        const result = autofillUniqueCandidates(schema);
+        if (result === schema) {
+          return { ok: false, msg: '没有可自动填充的格子' };
+        }
+        pushUndo();
+        replaceSchema(result);
+        return { ok: true };
+      }
+
+      // last r 1-9 - 行最后一位
+      if (cmd === 'last' && parts[1]) {
+        const unit = parts[1].toLowerCase();
+        const d = Number(parts[2]);
+        if (!(d >= 1 && d <= 9)) {
+          return { ok: false, msg: '用法: last r|c|b 1-9 1-9' };
+        }
+        let result = schema;
+        if (unit === 'r') {
+          result = lastDigitRow(schema, parts[2] - 1, d as Digit);
+        } else if (unit === 'c') {
+          result = lastDigitCol(schema, parts[2] - 1, d as Digit);
+        } else if (unit === 'b') {
+          result = lastDigitBox(schema, parts[2] - 1, d as Digit);
+        }
+        if (result === schema) {
+          return { ok: false, msg: '没有可填充的格子' };
+        }
+        pushUndo();
+        replaceSchema(result);
+        return { ok: true };
+      }
+
+      // nakedpair r1c1:5 r2c2:6 - 裸对
+      if (cmd === 'np') {
+        const a = parsePosDigit(parts[1] || '');
+        const b = parsePosDigit(parts[2] || '');
+        if (!a || !b) {
+          return { ok: false, msg: '用法: np r1c1:5 r2c2:6' };
+        }
+        const result = nakedPair(schema, a.digit, b.digit, a.pos, b.pos);
+        if (result === schema) {
+          return { ok: false, msg: '不满足裸对条件' };
+        }
+        pushUndo();
+        replaceSchema(result);
         return { ok: true };
       }
 
@@ -348,12 +440,9 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       setCellColor,
       setCellValue,
       setCandidateColor,
-      setHighlightedDigit,
-      toggleCenterCandidate,
       toggleCornerCandidate,
     ]
   );
-
   const exec = useCallback(() => {
     const cmds = input
       .split(';')
@@ -404,7 +493,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="示例: set r1c1 5; corner r1c1 3"
+          placeholder="示例: s r1c1 5; k r1c1 3"
           className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm outline-none focus:ring-2 focus:ring-ring"
         />
         <button
@@ -454,17 +543,21 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         )}
       </div>
       <div className="mt-3 text-[11px] text-muted-foreground space-y-1">
-        <div>set r1c1 5 [r1c2 6 ...]</div>
-        <div>clear r1c1 [r2c2 ...]</div>
-        <div>corner r1c1 3 [r1c2 4 ...]</div>
-        <div>center r1c1 3 [r1c2 4 ...]</div>
-        <div>cellcolor r1c1 3 | cellcolor r1c1 0</div>
-        <div>candcolor r1c1 5 2 corner|center</div>
-        <div>highlight 5 | highlight off</div>
-        <div>select r1c1</div>
-        <div>link r1c1:4 r2c5:4 strong|weak | linkclear</div>
-        <div>支持多个命令用 ; 分隔</div>
-        <div>支持上下键浏览历史，撤销/重做</div>
+        <div>s r1c1 5 - 设置格子值</div>
+        <div>c r1c1 - 清除格子</div>
+        <div>k r1c1 [3] - 切换候选数</div>
+        <div>h 1-9/off - 高亮数字</div>
+        <div>H 1-9 - 高亮行</div>
+        <div>V 1-9 - 高亮列</div>
+        <div>B 1-9 - 高亮宫</div>
+        <div>cc r1c1 1-8 - 单元格颜色</div>
+        <div>kc r1c1 5 1-6 - 候选数颜色</div>
+        <div>l r1c1:5 r2c2:5 [s|w] - 添加链</div>
+        <div>lc - 清除链</div>
+        <div>auto - 自动填充</div>
+        <div>last r|c|b 1-9 1-9 - 最后一位</div>
+        <div>np r1c1:5 r2c2:6 - 裸对</div>
+        <div>u/r - 撤销/重做</div>
       </div>
     </div>
   );

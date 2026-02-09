@@ -10,10 +10,8 @@ export const SudokuApp: React.FC = () => {
     selectCell,
     setCellValue,
     toggleCornerCandidate,
-    toggleCenterCandidate,
     setCellColor,
     setCandidateColor,
-    setHighlightedDigit,
     addLink,
     clearLinks,
     clearCell,
@@ -21,7 +19,7 @@ export const SudokuApp: React.FC = () => {
   } = useSudokuState();
 
   const [selectedCell, setSelectedCell] = React.useState<CellPosition | null>(null);
-  const [mode, setMode] = React.useState<'normal' | 'corner' | 'center'>('normal');
+  const [mode, setMode] = React.useState<'normal' | 'corner'>('normal');
 
   const handleCellClick = (position: CellPosition) => {
     setSelectedCell(position);
@@ -35,8 +33,6 @@ export const SudokuApp: React.FC = () => {
       setCellValue(selectedCell, digit);
     } else if (mode === 'corner') {
       toggleCornerCandidate(selectedCell, digit);
-    } else if (mode === 'center') {
-      toggleCenterCandidate(selectedCell, digit);
     }
   };
 
@@ -65,10 +61,8 @@ export const SudokuApp: React.FC = () => {
           selectCell={selectCell}
           setCellValue={setCellValue}
           toggleCornerCandidate={toggleCornerCandidate}
-          toggleCenterCandidate={toggleCenterCandidate}
           setCellColor={setCellColor}
           setCandidateColor={setCandidateColor}
-          setHighlightedDigit={setHighlightedDigit}
           addLink={addLink}
           clearLinks={clearLinks}
           clearCell={clearCell}
@@ -96,16 +90,6 @@ export const SudokuApp: React.FC = () => {
               onClick={() => setMode('corner')}
             >
               角注
-            </button>
-            <button
-              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                mode === 'center'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-              onClick={() => setMode('center')}
-            >
-              中心
             </button>
           </div>
           <div className="grid grid-cols-5 gap-2 mt-4">
