@@ -5,6 +5,7 @@ import {
   Digit,
   Candidate,
   Cell,
+  getBoxIndex,
 } from '@/types/sudoku';
 
 interface SudokuCanvasProps {
@@ -144,7 +145,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
         // 检查是否点击了候选数
         if (onCandidateClick) {
           const cell = schema.cells[row][col];
-          if (!cell.value && cell.cornerCandidates.length > 0) {
+          if (!cell.digit && cell.cornerCandidates.length > 0) {
             const cellX = col * actualCellSize;
             const cellY = row * actualCellSize;
             const localX = x - cellX;
@@ -158,13 +159,13 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
             // 检查该候选数是否存在
             const candidate = cell.cornerCandidates.find((c) => c.digit === clickedDigit);
             if (candidate) {
-              onCandidateClick({ row, col }, clickedDigit);
+              onCandidateClick({ row, col, box: getBoxIndex(row, col) }, clickedDigit);
               return;
             }
           }
         }
 
-        onCellClick({ row, col });
+        onCellClick({ row, col, box: getBoxIndex(row, col) });
       }
     },
     [actualCellSize, onCellClick, onCandidateClick, schema.cells, padding]
@@ -436,9 +437,9 @@ function drawLinks(
     const from = getCandidatePosition(
       link.from.position.row,
       link.from.position.col,
-      link.from.candidate
+      link.from.digit
     );
-    const to = getCandidatePosition(link.to.position.row, link.to.position.col, link.to.candidate);
+    const to = getCandidatePosition(link.to.position.row, link.to.position.col, link.to.digit);
 
     // 计算缩短的终点（给箭头留空间）
     const angle = Math.atan2(to.y - from.y, to.x - from.x);
