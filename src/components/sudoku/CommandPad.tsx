@@ -389,17 +389,21 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       // last r 1-9 - 行最后一位
       if (cmd === 'last' && parts[1]) {
         const unit = parts[1].toLowerCase();
-        const d = Number(parts[2]);
+        const idx = Number(parts[2]);
+        if (!(idx >= 1 && idx <= 9)) {
+          return { ok: false, msg: '用法: last r|c|b 1-9 1-9' };
+        }
+        const d = Number(parts[3]);
         if (!(d >= 1 && d <= 9)) {
           return { ok: false, msg: '用法: last r|c|b 1-9 1-9' };
         }
         let result = schema;
         if (unit === 'r') {
-          result = lastDigitRow(schema, parts[2] - 1, d as Digit);
+          result = lastDigitRow(schema, idx - 1, d as Digit);
         } else if (unit === 'c') {
-          result = lastDigitCol(schema, parts[2] - 1, d as Digit);
+          result = lastDigitCol(schema, idx - 1, d as Digit);
         } else if (unit === 'b') {
-          result = lastDigitBox(schema, parts[2] - 1, d as Digit);
+          result = lastDigitBox(schema, idx - 1, d as Digit);
         }
         if (result === schema) {
           return { ok: false, msg: '没有可填充的格子' };

@@ -604,16 +604,17 @@ export function subCandidates(
 }
 
 export function createLink(
-  digit: Digit,
+  digit1: Digit,
   row1: number,
   col1: number,
+  digit2: Digit,
   row2: number,
   col2: number,
   isStrong: boolean
 ): Link {
   return {
-    from: { position: { row: row1, col: col1, box: getBoxIndex(row1, col1) }, digit: digit },
-    to: { position: { row: row2, col: col2, box: getBoxIndex(row2, col2) }, digit: digit },
+    from: { position: { row: row1, col: col1, box: getBoxIndex(row1, col1) }, digit: digit1 },
+    to: { position: { row: row2, col: col2, box: getBoxIndex(row2, col2) }, digit: digit2 },
     isStrong: isStrong,
   };
 }
