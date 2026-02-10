@@ -228,22 +228,33 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         )}
       </div>
       <div className="mt-3 text-[11px] text-muted-foreground space-y-1">
-        <div>s 11 5 - 设置格子值</div>
-        <div>c 11 - 清除格子</div>
-        <div>k 11 [3] - 切换候选数</div>
-        <div>h 1-9/off - 高亮数字</div>
-        <div>hr 1-9 - 高亮行</div>
-        <div>hc 1-9 - 高亮列</div>
-        <div>hb 1-9 - 高亮宫</div>
-        <div>cc 11 1-8 - 单元格颜色</div>
-        <div>cn 11 5 1-6 - 候选数颜色</div>
-        <div>lks 115 225  - 添加强链</div>
-        <div>lkw 115 225  - 添加弱链</div>
-        <div>lkc 11 22 - 清除链</div>
-        <div>auto - 自动填充</div>
-        <div>l[r|c|b] 1-9 1-9 - 最后一位</div>
-        <div>np 11 22 5 6 - 裸对</div>
-        <div>u/r - 撤销/重做</div>
+        <div>new xxx - 导入新题目</div>
+        <div>set 11 5 - 设置格子值</div>
+        <div>unset 11 - 取消设置格子值</div>
+        <div>hra 1 2 3 - 添加高亮行</div>
+        <div>hrs 1 2 3 - 高亮行</div>
+        <div>hrj 1 2 3 - 高亮行(交集)</div>
+        <div>hca 1 2 3 - 添加高亮列</div>
+        <div>hcs 1 2 3 - 高亮列</div>
+        <div>hcj 1 2 3 - 高亮列(交集)</div>
+        <div>hba 1 2 3 - 添加高亮区</div>
+        <div>hbs 1 2 3 - 高亮区</div>
+        <div>hbj 1 2 3 - 高亮区(交集)</div>
+        <div>hda 1 2 3 - 添加高亮数字</div>
+        <div>hds 1 2 3 - 高亮数字</div>
+        <div>hdj 1 2 3 - 高亮数字(交集)</div>
+        <div>ha 12 23 34 - 添加高亮格子</div>
+        <div>hs 12 23 34 - 高亮格子</div>
+        <div>hxys - 高亮2个后续数的格子</div>
+        <div>hxya - 添加高亮2个后续数的格子</div>
+        <div>hxyj - 高亮2个后续数的格子(交集)</div>
+        <div>uh - 取消高亮</div>
+        <div>ss 12 34 42 - 选择格子</div>
+        <div>sa 12 34 42 - 添加选择格子</div>
+        <div>fuc 12 - 填充唯一后续数格子</div>
+        <div>fur 23 - 行内唯一数</div>
+        <div>fuc 23 - 列内唯一数</div>
+        <div>fub 23 - 区内唯一数</div>
       </div>
     </div>
   );

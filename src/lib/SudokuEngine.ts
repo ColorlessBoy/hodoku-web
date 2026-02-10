@@ -1,5 +1,5 @@
+
 export type CellColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
-import { clearAllHighlighted } from './SudokuEngine';
 export type CandidateColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
 export type Digit = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -113,7 +113,44 @@ export interface SudokuSchema {
   superLinks: SuperLink[];
 }
 
-export function fillCandidates(cells: Cell[][], row: number, col: number) {
+export function createNewSchema(nums: number[][]): SudokuSchema {
+  assert(nums.length === 9 && nums[0].length === 9);
+  const cells: Cell[][] = [];
+
+  for (let i = 0; i < 9; i++) {
+    cells.push([]);
+    for (let j = 0; j < 9; j++) {
+      if (nums[i][j] !== 0) {
+        cells[i].push({
+          position: { row: i, col: j, box: getBoxIndex(i, j) },
+          digit: nums[i][j] as Digit,
+          isGiven: true,
+        });
+      } else {
+        cells[i].push({
+          position: { row: i, col: j, box: getBoxIndex(i, j) },
+          isGiven: false,
+        });
+      }
+    }
+  }
+  fillAllCandidatesInplace(cells);
+  return {
+    cells,
+    links: [],
+    superLinks: [],
+  };
+}
+
+export function fillAllCandidatesInplace(cells: Cell[][]) {
+  for(let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      fillCandidatesInplace(cells, i, j);
+    }
+  }
+}
+
+export function fillCandidatesInplace(cells: Cell[][], row: number, col: number) {
   if (
     cells[row][col].isGiven ||
     cells[row][col].digit ||
@@ -167,7 +204,7 @@ export function unsetCellInplace(cells: Cell[][], row: number, col: number) {
   cells[row][col].digit = null;
   cells[row][col].cornerCandidates = null;
   cells[row][col].hasConflict = false;
-  fillCandidates(cells, row, col);
+  fillCandidatesInplace(cells, row, col);
   for (const position of getRelatedRange(row, col)) {
     if (cells[position.row][position.col].digit === digit) {
       if (checkConflict(cells, position.row, position.col, digit)) {
@@ -276,6 +313,18 @@ function abstractAdd(
   };
 }
 
+// 基于之前的状态，合并新的状态
+function abstractJoin(
+  schema: SudokuSchema,
+  cond: (cell: Cell) => boolean,
+  checkTrue: (cell: Cell) => boolean,
+  newTrue: (cell: Cell) => Cell,
+  newFalse: (cell: Cell) => Cell
+) {
+  const cond2 = (cell: Cell) => cond(cell) && checkTrue(cell);
+  return abstractSet(schema, cond2, checkTrue, newTrue, newFalse);
+}
+
 function abstractSetHighlighted(schema: SudokuSchema, cond: (cell: Cell) => boolean): SudokuSchema {
   const checkTrue = (cell: Cell) => cell.isHighlighted;
   const newTrue = (cell: Cell) => ({ ...cell, isHighlighted: true });
@@ -289,6 +338,12 @@ function abstractAddHighlighted(schema: SudokuSchema, cond: (cell: Cell) => bool
   return abstractAdd(schema, cond, checkTrue, newTrue);
 }
 
+function abstractJoinHighlighted(schema: SudokuSchema, cond: (cell: Cell) => boolean): SudokuSchema {
+  const checkTrue = (cell: Cell) => cell.isHighlighted;
+  const newTrue = (cell: Cell) => ({ ...cell, isHighlighted: true });
+  const newFalse = (cell: Cell) => ({ ...cell, isHighlighted: false });
+  return abstractJoin(schema, cond, checkTrue, newTrue, newFalse);
+}
 function abstractSubHighlighted(schema: SudokuSchema, cond: (cell: Cell) => boolean): SudokuSchema {
   const checkTrue = (cell: Cell) => cell.isHighlighted;
   const newFalse = (cell: Cell) => ({ ...cell, isHighlighted: false });
@@ -315,6 +370,11 @@ export function subHighlightedDigit(schema: SudokuSchema, digit: Digit): SudokuS
     cell.digit === digit || cell.cornerCandidates.some((c) => c.digit === digit);
   return abstractSubHighlighted(schema, cond);
 }
+export function joinHighlightedDigit(schema: SudokuSchema, digit: Digit): SudokuSchema {
+  const cond = (cell: Cell) =>
+    cell.digit === digit || cell.cornerCandidates.some((c) => c.digit === digit);
+  return abstractJoinHighlighted(schema, cond);
+}
 export function setHighlightedDigits(schema: SudokuSchema, digits: Digit[]): SudokuSchema {
   const cond = (cell: Cell) =>
     digits.some((d) => d == cell.digit) ||
@@ -333,6 +393,12 @@ export function subHighlightedDigits(schema: SudokuSchema, digits: Digit[]): Sud
     digits.some((d) => cell.cornerCandidates.some((c) => c.digit === d));
   return abstractSubHighlighted(schema, cond);
 }
+export function joinHighlightedDigits(schema: SudokuSchema, digits: Digit[]): SudokuSchema {
+  const cond = (cell: Cell) =>
+    digits.some((d) => d == cell.digit) ||
+    digits.some((d) => cell.cornerCandidates.some((c) => c.digit === d));
+  return abstractJoinHighlighted(schema, cond);
+}
 
 export function setHighlightedRow(schema: SudokuSchema, row: number): SudokuSchema {
   const cond = (cell: Cell) => row === cell.position.row;
@@ -345,6 +411,10 @@ export function addHighlightedRow(schema: SudokuSchema, row: number): SudokuSche
 export function subHighlightedRow(schema: SudokuSchema, row: number): SudokuSchema {
   const cond = (cell: Cell) => row === cell.position.row;
   return abstractSubHighlighted(schema, cond);
+}
+export function joinHighlightedRow(schema: SudokuSchema, row: number): SudokuSchema {
+  const cond = (cell: Cell) => row === cell.position.row;
+  return abstractJoinHighlighted(schema, cond);
 }
 
 export function setHighlightedRows(schema: SudokuSchema, rows: number[]): SudokuSchema {
@@ -361,7 +431,10 @@ export function subHighlightedRows(schema: SudokuSchema, rows: number[]): Sudoku
   const cond = (cell: Cell) => rows.some((r) => r === cell.position.row);
   return abstractSubHighlighted(schema, cond);
 }
-
+export function joinHighlightedRows(schema: SudokuSchema, rows: number[]): SudokuSchema {
+  const cond = (cell: Cell) => rows.some((r) => r === cell.position.row);
+  return abstractJoinHighlighted(schema, cond);
+}
 export function setHighlightedCol(schema: SudokuSchema, col: number): SudokuSchema {
   const cond = (cell: Cell) => col === cell.position.col;
   return abstractSetHighlighted(schema, cond);
@@ -374,6 +447,10 @@ export function addHighlightedCol(schema: SudokuSchema, col: number): SudokuSche
 export function subHighlightedCol(schema: SudokuSchema, col: number): SudokuSchema {
   const cond = (cell: Cell) => col === cell.position.col;
   return abstractSubHighlighted(schema, cond);
+}
+export function joinHighlightedCol(schema: SudokuSchema, col: number): SudokuSchema {
+  const cond = (cell: Cell) => col === cell.position.col;
+  return abstractJoinHighlighted(schema, cond);
 }
 
 export function setHighlightedCols(schema: SudokuSchema, cols: number[]): SudokuSchema {
@@ -389,7 +466,10 @@ export function subHighlightedCols(schema: SudokuSchema, cols: number[]): Sudoku
   const cond = (cell: Cell) => cols.some((c) => c === cell.position.col);
   return abstractSubHighlighted(schema, cond);
 }
-
+export function joinHighlightedCols(schema: SudokuSchema, cols: number[]): SudokuSchema {
+  const cond = (cell: Cell) => cols.some((c) => c === cell.position.col);
+  return abstractJoinHighlighted(schema, cond);
+}
 export function setHighlightedBox(schema: SudokuSchema, box: number): SudokuSchema {
   const cond = (cell: Cell) => box === cell.position.box;
   return abstractSetHighlighted(schema, cond);
@@ -403,7 +483,10 @@ export function subHighlightedBox(schema: SudokuSchema, box: number): SudokuSche
   const cond = (cell: Cell) => box === cell.position.box;
   return abstractSubHighlighted(schema, cond);
 }
-
+export function joinHighlightedBox(schema: SudokuSchema, box: number): SudokuSchema {
+  const cond = (cell: Cell) => box === cell.position.box;
+  return abstractJoinHighlighted(schema, cond);
+}
 export function setHighlightedBoxes(schema: SudokuSchema, boxes: number[]): SudokuSchema {
   const cond = (cell: Cell) => boxes.some((b) => b === cell.position.box);
   return abstractSetHighlighted(schema, cond);
@@ -418,7 +501,10 @@ export function subHighlightedBoxes(schema: SudokuSchema, boxes: number[]): Sudo
   const cond = (cell: Cell) => boxes.some((b) => b === cell.position.box);
   return abstractSubHighlighted(schema, cond);
 }
-
+export function joinHighlightedBoxes(schema: SudokuSchema, boxes: number[]): SudokuSchema {
+  const cond = (cell: Cell) => boxes.some((b) => b === cell.position.box);
+  return abstractJoinHighlighted(schema, cond);
+}
 export function setHighlightedXY(schema: SudokuSchema): SudokuSchema {
   const cond = (cell: Cell) => cell.cornerCandidates && cell.cornerCandidates.length === 2;
   return abstractSetHighlighted(schema, cond);
@@ -427,6 +513,11 @@ export function setHighlightedXY(schema: SudokuSchema): SudokuSchema {
 export function addHighlightedXY(schema: SudokuSchema): SudokuSchema {
   const cond = (cell: Cell) => cell.cornerCandidates && cell.cornerCandidates.length === 2;
   return abstractAddHighlighted(schema, cond);
+}
+
+export function joinHighlightedXY(schema: SudokuSchema): SudokuSchema {
+  const cond = (cell: Cell) => cell.cornerCandidates && cell.cornerCandidates.length === 2;
+  return abstractJoinHighlighted(schema, cond);
 }
 
 export function setHighlightedCells(schema: SudokuSchema, positions: CellPosition[]): SudokuSchema {
@@ -464,6 +555,13 @@ function abstractSubSelected(schema: SudokuSchema, cond: (cell: Cell) => boolean
   return abstractAdd(schema, cond, checkState, newFalse);
 }
 
+function abstractJoinSelected(schema: SudokuSchema, cond: (cell: Cell) => boolean): SudokuSchema {
+  const checkState = (cell: Cell) => cell.isSelected;
+  const newTrue = (cell: Cell) => ({ ...cell, isSelected: true });
+  const newFalse = (cell: Cell) => ({ ...cell, isSelected: false });
+  return abstractJoin(schema, cond, checkState, newTrue, newFalse);
+}
+
 export function clearAllSelected(schema: SudokuSchema): SudokuSchema {
   const cond = (cell: Cell) => true;
   return abstractSubSelected(schema, cond);
@@ -484,6 +582,10 @@ export function subSelectedDigit(schema: SudokuSchema, digit: Digit): SudokuSche
   return abstractSubSelected(schema, cond);
 }
 
+export function joinSelectedDigit(schema: SudokuSchema, digit: Digit): SudokuSchema {
+  const cond = (cell: Cell) => digit === cell.digit;
+  return abstractJoinSelected(schema, cond);
+}
 export function setSelectedDigits(schema: SudokuSchema, digits: Digit[]): SudokuSchema {
   const cond = (cell: Cell) =>
     digits.some((d) => d == cell.digit) ||
@@ -505,6 +607,13 @@ export function subSelectedDigits(schema: SudokuSchema, digits: Digit[]): Sudoku
   return abstractSubSelected(schema, cond);
 }
 
+export function joinSelectedDigits(schema: SudokuSchema, digits: Digit[]): SudokuSchema {
+  const cond = (cell: Cell) =>
+    digits.some((d) => d == cell.digit) ||
+    digits.some((d) => cell.cornerCandidates.some((c) => c.digit === d));
+  return abstractJoinSelected(schema, cond);
+}
+
 export function setSelectedCell(schema: SudokuSchema, cellPosition: CellPosition): SudokuSchema {
   const cond = (cell: Cell) =>
     cellPosition.row === cell.position.row && cellPosition.col === cell.position.col;
@@ -521,6 +630,12 @@ export function subSelectedCell(schema: SudokuSchema, cellPosition: CellPosition
   const cond = (cell: Cell) =>
     cellPosition.row === cell.position.row && cellPosition.col === cell.position.col;
   return abstractSubSelected(schema, cond);
+}
+
+export function joinSelectedCell(schema: SudokuSchema, cellPosition: CellPosition): SudokuSchema {
+  const cond = (cell: Cell) =>
+    cellPosition.row === cell.position.row && cellPosition.col === cell.position.col;
+  return abstractJoinSelected(schema, cond);
 }
 
 export function setSelectedCells(
@@ -550,6 +665,12 @@ export function subSelectedCells(
   return abstractSubSelected(schema, cond);
 }
 
+export function joinSelectedCells(schema: SudokuSchema, cellPositions: CellPosition[]): SudokuSchema {
+  const cond = (cell: Cell) =>
+    cellPositions.some((c) => c.row === cell.position.row && c.col === cell.position.col);
+  return abstractJoinSelected(schema, cond);
+}
+
 export function setSelectedRow(schema: SudokuSchema, row: number): SudokuSchema {
   const cond = (cell: Cell) => row === cell.position.row;
   return abstractSetSelected(schema, cond);
@@ -563,6 +684,11 @@ export function addSelectedRow(schema: SudokuSchema, row: number): SudokuSchema 
 export function subSelectedRow(schema: SudokuSchema, row: number): SudokuSchema {
   const cond = (cell: Cell) => row === cell.position.row;
   return abstractSubSelected(schema, cond);
+}
+
+export function joinSelectedRow(schema: SudokuSchema, row: number): SudokuSchema {
+  const cond = (cell: Cell) => row === cell.position.row;
+  return abstractJoinSelected(schema, cond);
 }
 
 export function setSelectedRows(schema: SudokuSchema, rows: number[]): SudokuSchema {
@@ -580,6 +706,12 @@ export function subSelectedRows(schema: SudokuSchema, rows: number[]): SudokuSch
   return abstractSubSelected(schema, cond);
 }
 
+export function joinSelectedRows(schema: SudokuSchema, rows: number[]): SudokuSchema {
+  const cond = (cell: Cell) => rows.some((r) => r === cell.position.row);
+  return abstractJoinSelected(schema, cond);
+}
+
+
 export function setSelectedCol(schema: SudokuSchema, col: number): SudokuSchema {
   const cond = (cell: Cell) => col === cell.position.col;
   return abstractSetSelected(schema, cond);
@@ -593,6 +725,11 @@ export function addSelectedCol(schema: SudokuSchema, col: number): SudokuSchema 
 export function subSelectedCol(schema: SudokuSchema, col: number): SudokuSchema {
   const cond = (cell: Cell) => col === cell.position.col;
   return abstractSubSelected(schema, cond);
+}
+
+export function joinSelectedCol(schema: SudokuSchema, col: number): SudokuSchema {
+  const cond = (cell: Cell) => col === cell.position.col;
+  return abstractJoinSelected(schema, cond);
 }
 
 export function setSelectedCols(schema: SudokuSchema, cols: number[]): SudokuSchema {
@@ -610,6 +747,11 @@ export function subSelectedCols(schema: SudokuSchema, cols: number[]): SudokuSch
   return abstractSubSelected(schema, cond);
 }
 
+export function joinSelectedCols(schema: SudokuSchema, cols: number[]): SudokuSchema {
+  const cond = (cell: Cell) => cols.some((c) => c === cell.position.col);
+  return abstractJoinSelected(schema, cond);
+}
+
 export function setSelectedBox(schema: SudokuSchema, box: number): SudokuSchema {
   const cond = (cell: Cell) => box === cell.position.box;
   return abstractSetSelected(schema, cond);
@@ -625,6 +767,11 @@ export function subSelectedBox(schema: SudokuSchema, box: number): SudokuSchema 
   return abstractSubSelected(schema, cond);
 }
 
+export function joinSelectedBox(schema: SudokuSchema, box: number): SudokuSchema {
+  const cond = (cell: Cell) => box === cell.position.box;
+  return abstractJoinSelected(schema, cond);
+}
+
 export function setSelectedBoxes(schema: SudokuSchema, boxes: number[]): SudokuSchema {
   const cond = (cell: Cell) => boxes.some((b) => b === cell.position.box);
   return abstractSetSelected(schema, cond);
@@ -638,6 +785,11 @@ export function addSelectedBoxes(schema: SudokuSchema, boxes: number[]): SudokuS
 export function subSelectedBoxes(schema: SudokuSchema, boxes: number[]): SudokuSchema {
   const cond = (cell: Cell) => boxes.some((b) => b === cell.position.box);
   return abstractSubSelected(schema, cond);
+}
+
+export function joinSelectedBoxes(schema: SudokuSchema, boxes: number[]): SudokuSchema {
+  const cond = (cell: Cell) => boxes.some((b) => b === cell.position.box);
+  return abstractJoinSelected(schema, cond);
 }
 
 export function addCellColor(
@@ -842,7 +994,7 @@ export function cloneCells(cells: Cell[][]): Cell[][] {
     }))
   );
 }
-export function autofillUniqueCandidates(schema: SudokuSchema): SudokuSchema {
+export function autofillUniqueCandidate(schema: SudokuSchema): SudokuSchema {
   const cells = cloneCells(schema.cells);
   let changed = false;
   for (let i = 0; i < 81; i++) {
@@ -1468,6 +1620,152 @@ export function clearAllHighlightedInplace(cells: Cell[][]) {
       if (cell.isHighlighted) {
         cell.isHighlighted = false;
       }
+    }
+  }
+}
+
+export function clearAllSelectedInplace(cells: Cell[][]) {
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell.isSelected) {
+        cell.isSelected = false;
+      }
+    }
+  }
+}
+
+export function setSelectedCellInplace(cells: Cell[][], row: number, col: number) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (r === row && c === col) {
+        cells[r][c].isSelected = true;
+      } else {
+        cells[r][c].isSelected = false;
+      }
+    }
+  }
+}
+
+export function fillUniqueCandidateInplace(cells: Cell[][], row: number, col: number): number {
+  if (cells[row][col].cornerCandidates === null) {
+    return -1;
+  }
+  if (cells[row][col].cornerCandidates.length === 1){
+    setCellInplace(cells, row, col, cells[row][col].cornerCandidates[0].digit);
+    return 0;
+  }
+  return -1;
+}
+
+export function fillUniqueRowInplace(cells: Cell[][], row: number, digit: Digit): number {
+  let cnt = 0;
+  let col = -1;
+  for(let c = 0; c < 9; c++) {
+    if (cells[row][c].digit === digit) {
+      cnt++;
+    } else if (cells[row][c].cornerCandidates?.some((c) => c.digit === digit)) {
+      cnt++;
+      col = c;
+    }
+  }
+  if (cnt !== 1 || col < 0) {
+    return -1;
+  }
+  setCellInplace(cells, row, col, digit);
+  return 0;
+}
+
+export function fillUniqueColInplace(cells: Cell[][], col: number, digit: Digit): number { 
+  let cnt = 0;
+  let row = -1;
+  for(let r = 0; r < 9; r++) {
+    if (cells[r][col].digit === digit) {
+      cnt++;
+    } else if (cells[r][col].cornerCandidates?.some((c) => c.digit === digit)) {
+      cnt++;
+      row = r;
+    }
+  }
+  if (cnt !== 1 || row < 0) {
+    return -1;
+  }
+  setCellInplace(cells, row, col, digit);
+  return 0;
+}
+
+export function fillUniqueBoxInplace(cells: Cell[][], box: number, digit: Digit): number {
+  let cnt = 0;
+  let row = -1;
+  let col = -1;
+  const boxRange = getBoxRange(box);
+  for (const position of boxRange) { 
+    if (cells[position.row][position.col].digit === digit) {
+      cnt++;
+    } else if (cells[position.row][position.col].cornerCandidates?.some((c) => c.digit === digit)) {
+      cnt++;
+      row = position.row;
+      col = position.col;
+    }
+  }
+  if (cnt !== 1 || row < 0 || col < 0) {
+    return -1;
+  }
+  setCellInplace(cells, row, col, digit);
+  return 0;
+}
+
+export function setHighlightedDigitInplace(cells: Cell[][], digit: Digit) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (cells[r][c].digit === digit || cells[r][c].cornerCandidates?.some((c) => c.digit === digit)) {
+        cells[r][c].isHighlighted = true;
+      } else {
+        cells[r][c].isHighlighted = false;
+      }
+    }
+  }
+}
+
+export function addHighlightedDigitInplace(cells: Cell[][], digit: Digit) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (cells[r][c].digit === digit || cells[r][c].cornerCandidates?.some((c) => c.digit === digit)) {
+        cells[r][c].isHighlighted = true;
+      }
+    }
+  }
+}
+
+export function setSelectedDigitInplace(cells: Cell[][], digit: Digit) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (cells[r][c].digit === digit || cells[r][c].cornerCandidates?.some((c) => c.digit === digit)) {
+        cells[r][c].isSelected = true;
+      } else {
+        cells[r][c].isSelected = false;
+      }
+    }
+  }
+}
+
+export function addSelectedDigitInplace(cells: Cell[][], digit: Digit) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (cells[r][c].digit === digit || cells[r][c].cornerCandidates?.some((c) => c.digit === digit)) {
+        cells[r][c].isSelected = true;
+      }
+    }
+  }
+}
+
+export function joinSelectedDigitInplace(cells: Cell[][], digit: Digit) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (cells[r][c].isSelected) {
+        if (!(cells[r][c].digit === digit || cells[r][c].cornerCandidates?.some((c) => c.digit === digit))) {
+          cells[r][c].isSelected = false;
+        }
+      } 
     }
   }
 }
