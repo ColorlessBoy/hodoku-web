@@ -1,4 +1,5 @@
 export type CellColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
+import { clearAllHighlighted } from './SudokuEngine';
 export type CandidateColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
 export type Digit = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
@@ -1459,4 +1460,14 @@ export function setSelectCellInplace(cells: Cell[][], row: number, col: number) 
 
 export function addHighlightedCellInplace(cells: Cell[][], row: number, col: number) {
   cells[row][col].isHighlighted = true;
+}
+
+export function clearAllHighlightedInplace(cells: Cell[][]) {
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell.isHighlighted) {
+        cell.isHighlighted = false;
+      }
+    }
+  }
 }

@@ -53,8 +53,8 @@ import { generatePuzzle, gridToSchema } from '@/lib/sudokuGenerator';
 import { cloneSchema } from '@/lib/schemaAdapter';
 import {
   fillCandidates,
-  setSelectRowInplace as setSelectRowInplace,
-  setSelectCellInplace as setSelectCellInplace,
+  setSelectRowInplace,
+  setSelectCellInplace,
   unsetCellInplace,
   setHighlightedRows,
   setHighlightedCols,
@@ -65,6 +65,8 @@ import {
   addHighlightedBoxes,
   addHighlightedCells,
   addHighlightedCellInplace,
+  addHighlightedDigits,
+  clearAllHighlightedInplace,
 } from './SudokuEngine';
 
 // ============================================================================
@@ -174,29 +176,52 @@ const cmdUnset: CmdHandler = (schema, args) => {
   return ok({ ...schema, cells: newCells });
 };
 
-const cmdHighlightRows: CmdHandler = (schema, args) => {
+const cmdAddHighlightRows: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hr 1 3 7');
   }
   const rows = args.map((arg) => clampRC(Number(arg)));
   return ok(addHighlightedRows(schema, rows));
 };
-const cmdHighlightCols: CmdHandler = (schema, args) => {
+
+const cmdSetHighlightedRows: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: hr0 1 3 7');
+  }
+  const rows = args.map((arg) => clampRC(Number(arg)));
+  return ok(setHighlightedRows(schema, rows));
+};
+
+const cmdAddHighlightCols: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hc 1 3 7');
   }
   const cols = args.map((arg) => clampRC(Number(arg)));
   return ok(addHighlightedCols(schema, cols));
 };
-const cmdHighlightBoxes: CmdHandler = (schema, args) => {
+
+const cmdSetHighlightCols: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: hc0 1 3 7');
+  }
+  const cols = args.map((arg) => clampRC(Number(arg)));
+  return ok(setHighlightedCols(schema, cols));
+};
+const cmdAddHighlightBoxes: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hb 1 3 7');
   }
   const boxes = args.map((arg) => clampRC(Number(arg)));
   return ok(addHighlightedBoxes(schema, boxes));
 };
-
-const cmdHighlightCells: CmdHandler = (schema, args) => {
+const cmdSetHighlightBoxes: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: hb0 1 3 7');
+  }
+  const boxes = args.map((arg) => clampRC(Number(arg)));
+  return ok(setHighlightedBoxes(schema, boxes));
+};
+const cmdAddHighlightCells: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: h 11 32 78');
   }
@@ -213,143 +238,53 @@ const cmdHighlightCells: CmdHandler = (schema, args) => {
       setSelectCellInplace(newCells, pos.row, pos.col);
       break; // 自动改成 Select 操作, 并且只处理到不全的位置
     } else {
-      addHighlightedCellInplace(newCells, pos.row, pos.col)
+      addHighlightedCellInplace(newCells, pos.row, pos.col);
+    }
+  }
+  return ok({ ...schema, cells: newCells });
+};
+const cmdSetHighlightCells: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: h0 11 32 78');
+  }
+  const newCells = cloneCells(schema.cells);
+  clearAllHighlightedInplace(newCells);
+  for (const arg of args) {
+    const pos = parsePosDigit(arg);
+    if (!pos || !pos.row) {
+      return err('用法: h0 11 32 78');
+    }
+    if (!pos.col) {
+      setSelectRowInplace(newCells, pos.row);
+      break; // 自动改成 Select 操作, 并且只处理到不全的位置
+    } else if (!pos.digit) {
+      setSelectCellInplace(newCells, pos.row, pos.col);
+      break; // 自动改成 Select 操作, 并且只处理到不全的位置
+    } else {
+      addHighlightedCellInplace(newCells, pos.row, pos.col);
     }
   }
   return ok({ ...schema, cells: newCells });
 };
 
-const cmdHighlightDigits: CmdHandler = (schema, args) => {
+const cmdAddHighlightDigits: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hd 1 3 7');
+  }
+  const digits = args.map((arg) => clampRC(Number(arg)) as Digit);
+  return ok(addHighlightedDigits(schema, digits));
+};
+
+const cmdSetHighlightDigits: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: hd0 1 3 7');
   }
   const digits = args.map((arg) => clampRC(Number(arg)) as Digit);
   return ok(setHighlightedDigits(schema, digits));
 };
 
-/** k - 切换候选数 */
-const cmdCandidate: CmdHandler = (schema, args) => {
-  const pos = parsePos(args[0] ?? '');
-  if (!pos) {
-    return err('用法: k r1c1 [数字] 或 k 11 [3]');
-  }
-  const d = args[1] ? Number(args[1]) : null;
-  if (d !== null && !(d >= 1 && d <= 9)) {
-    return err('数字必须是 1-9');
-  }
-
-  const newCells = cloneCells(schema.cells);
-  const cell = newCells[pos.row][pos.col];
-
-  if (d !== null) {
-    // 切换特定候选数
-    const hasCandidate = cell.cornerCandidates?.some((c) => c.digit === d);
-    if (hasCandidate) {
-      cell.cornerCandidates = cell.cornerCandidates.filter((c) => c.digit !== d);
-    } else {
-      cell.cornerCandidates = [...(cell.cornerCandidates || []), { digit: d as Digit }];
-    }
-  } else {
-    // 选择格子 - 通过返回设置了 selectedCell 的 schema 来处理
-    return ok(setSelectedCell(schema, { row: pos.row, col: pos.col, box: pos.box }));
-  }
-
-  return ok({ ...schema, cells: newCells });
-};
-
-/** h - 高亮数字 */
-const cmdHighlight: CmdHandler = (schema, args) => {
-  const v = args[0]?.toLowerCase();
-  if (!v || v === 'off') {
-    return ok(clearAllHighlighted(schema));
-  }
-  const d = Number(v);
-  if (d >= 1 && d <= 9) {
-    return ok(setHighlightedDigit(schema, d as Digit));
-  }
-  return err('用法: h 1-9/off');
-};
-
-/** H - 高亮行 */
-const cmdHighlightRow: CmdHandler = (schema, args) => {
-  const r = Number(args[0]);
-  if (r >= 1 && r <= 9) {
-    return ok(setHighlightedRow(schema, r - 1));
-  }
-  return err('用法: H 1-9');
-};
-
-/** V - 高亮列 */
-const cmdHighlightCol: CmdHandler = (schema, args) => {
-  const c = Number(args[0]);
-  if (c >= 1 && c <= 9) {
-    return ok(setHighlightedCol(schema, c - 1));
-  }
-  return err('用法: V 1-9');
-};
-
-/** B - 高亮宫 */
-const cmdHighlightBox: CmdHandler = (schema, args) => {
-  const b = Number(args[0]);
-  if (b >= 1 && b <= 9) {
-    return ok(setHighlightedBox(schema, b - 1));
-  }
-  return err('用法: B 1-9');
-};
-
-/** cc - 单元格颜色 */
-const cmdCellColor: CmdHandler = (schema, args) => {
-  const pos = parsePos(args[0] ?? '');
-  const k = Number(args[1]);
-  if (!pos) {
-    return err('用法: cc r1c1 1-8 或 cc 11 1-8');
-  }
-  const color = k >= 1 && k <= 8 ? (k as CellColor) : null;
-  return ok(addCellColor(schema, pos.row, pos.col, color));
-};
-
-/** kc - 候选数颜色 */
-const cmdCandidateColor: CmdHandler = (schema, args) => {
-  const pos = parsePos(args[0] ?? '');
-  const d = Number(args[1]);
-  const k = Number(args[2]);
-  if (!pos || !(d >= 1 && d <= 9)) {
-    return err('用法: kc r1c1 5 1-6 或 kc 11 5 1-6');
-  }
-  const color = k >= 1 && k <= 6 ? (k as CandidateColor) : null;
-  return ok(addCandidateColor(schema, pos.row, pos.col, d as Digit, color));
-};
-
-/** l / lk - 添加链 */
-const cmdLink: CmdHandler = (schema, args, flags = {}) => {
-  const a = parsePosDigit(args[0] ?? '');
-  const b = parsePosDigit(args[1] ?? '');
-  const t = (args[2] ?? '').toLowerCase();
-  if (!a || !b) {
-    return err('用法: lk r1c1:5 r2c2:5 [strong|weak] 或 lk 115 225 [strong|weak]');
-  }
-  const isStrong = flags.strong || t === 'strong' || t === 's';
-  const link = createLink(a.digit, a.pos.row, a.pos.col, b.digit, b.pos.row, b.pos.col, isStrong);
-  const validation = validateLink(schema, link);
-  if (!validation.ok) return err('无效的链');
-
-  const newSchema = cloneSchema(schema);
-  newSchema.links = [...newSchema.links, link];
-  return ok(newSchema);
-};
-
-/** lkc - 清除链 */
-const cmdClearLinks: CmdHandler = (schema) => {
-  const newSchema = cloneSchema(schema);
-  newSchema.links = [];
-  return ok(newSchema);
-};
-
-/** solve - 求解 */
-const cmdSolve: CmdHandler = (schema) => {
-  const solution = solve(schema);
-  if (!solution) return err('当前题目无解');
-  return ok(applySolutionToSchema(schema, solution));
+const cmdUnHighlightAll: CmdHandler = (schema, args) => {
+  return ok(clearAllHighlighted(schema));
 };
 
 /** new / generate - 生成新题目 */
@@ -428,43 +363,19 @@ function initRegistry(): void {
   // 基础操作
   register('s', cmdSet);
   register('set', cmdSet);
-  register('u', cmdUnset);
-  register('unset', cmdUnset);
-  register('hr', cmdHighlightRows);
-  register('highlightrow', cmdHighlightRows);
-  register('hc', cmdHighlightCols);
-  register('highlightcol', cmdHighlightCols);
-  register('hb', cmdHighlightBoxes);
-  register('highlightbox', cmdHighlightBoxes);
-  register('h', cmdHighlightCells);
-  register('highlight', cmdHighlightCells);
+  register('us', cmdUnset);
+  register('hr', cmdAddHighlightRows);
+  register('hr0', cmdAddHighlightRows);
+  register('hc', cmdAddHighlightCols);
+  register('hc0', cmdSetHighlightCols);
+  register('hb', cmdAddHighlightBoxes);
+  register('hb0', cmdSetHighlightBoxes);
+  register('hd', cmdAddHighlightDigits);
+  register('hd0', cmdSetHighlightDigits);
+  register('h', cmdAddHighlightCells);
+  register('h0', cmdSetHighlightCells);
+  register('uh', cmdUnHighlightAll);
 
-  register('k', cmdCandidate);
-  register('candidate', cmdCandidate);
-
-  // 高亮
-  register('h', cmdHighlight);
-  register('highlight', cmdHighlight);
-  register('H', cmdHighlightRow);
-  register('hr', cmdHighlightRow);
-  register('V', cmdHighlightCol);
-  register('hc', cmdHighlightCol);
-  register('B', cmdHighlightBox);
-  register('hb', cmdHighlightBox);
-
-  // 颜色
-  register('cc', cmdCellColor);
-  register('kc', cmdCandidateColor);
-
-  // 链
-  register('l', (s, a) => cmdLink(s, a, {}));
-  register('lk', (s, a) => cmdLink(s, a, {}));
-  register('lks', (s, a) => cmdLink(s, a, { strong: true }));
-  register('lkw', (s, a) => cmdLink(s, a, { strong: false }));
-  register('lkc', cmdClearLinks);
-
-  // 解题
-  register('solve', cmdSolve);
   register('new', cmdNew);
   register('generate', cmdNew);
   register('auto', cmdAuto);
