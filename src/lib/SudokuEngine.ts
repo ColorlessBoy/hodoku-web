@@ -1002,7 +1002,7 @@ export function autofillUniqueCandidate(schema: SudokuSchema): SudokuSchema {
     for (let j = 0; j < 81; j++) {
       const r = Math.floor(j / 9);
       const c = j % 9;
-      if (!cells[r][c].isGiven && cells[r][c].cornerCandidates.length === 1) {
+      if (!cells[r][c].isGiven && cells[r][c].cornerCandidates?.length === 1) {
         setCellInplace(cells, r, c, cells[r][c].cornerCandidates[0].digit);
         hasUnique = true;
         break;
