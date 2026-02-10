@@ -24,7 +24,6 @@ export {
   checkStrongLink,
   setCellInplace as setDigit,
   cloneCells,
-  autofillUniqueCandidates,
   lastDigitRow,
   lastDigitCol,
   lastDigitBox,

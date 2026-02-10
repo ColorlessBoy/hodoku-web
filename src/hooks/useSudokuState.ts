@@ -7,20 +7,13 @@ import {
   CellColor,
   CandidateColor,
   Link,
-  examplePuzzle,
   getBoxIndex,
   isInSameUnit,
 } from '@/types/sudoku';
 
 // 创建空的 schema
 const createEmptySchema = (): SudokuSchema => ({
-  cells: Array.from({ length: 9 }, (_, row) =>
-    Array.from({ length: 9 }, (_, col): Cell => ({
-      position: { row, col, box: Math.floor(row / 3) * 3 + Math.floor(col / 3) },
-      isGiven: false,
-      cornerCandidates: [],
-    }))
-  ),
+  cells: [],
   links: [],
   superLinks: [],
 });
@@ -28,19 +21,6 @@ const createEmptySchema = (): SudokuSchema => ({
 export const useSudokuState = () => {
   const [schema, setSchema] = useState<SudokuSchema>(() => {
     const initial = createEmptySchema();
-
-    // 加载示例题目
-    examplePuzzle.forEach((row, rowIndex) => {
-      row.forEach((value, colIndex) => {
-        if (value !== null) {
-          initial.cells[rowIndex][colIndex] = {
-            ...initial.cells[rowIndex][colIndex],
-            digit: value,
-            isGiven: true,
-          };
-        }
-      });
-    });
 
     return initial;
   });
@@ -56,7 +36,7 @@ export const useSudokuState = () => {
         row.map((cell, colIndex): Cell => {
           const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
           const isRelated = selectedCell
-            ? isInSameUnit({ row: rowIndex, col: colIndex }, selectedCell) && !isSelected
+            ? isInSameUnit({ row: rowIndex, col: colIndex, box: getBoxIndex(rowIndex, colIndex) }, selectedCell) && !isSelected
             : false;
           const isSameValue =
             selectedCell && cells[selectedCell.row][selectedCell.col].digit

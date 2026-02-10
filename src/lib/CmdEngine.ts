@@ -37,7 +37,6 @@ import {
   setHighlightedBox,
   clearAllHighlighted,
   setSelectedCell,
-  autofillUniqueCandidates,
   lastDigitRow,
   lastDigitCol,
   lastDigitBox,
@@ -91,6 +90,16 @@ import {
   setSelectedDigitInplace,
   joinSelectedDigit,
   joinSelectedDigitInplace,
+  setSelectedRows,
+  addSelectedRows,
+  joinSelectedRows,
+  setSelectedCols,
+  addSelectedCols,
+  joinSelectedCols,
+  setSelectedBoxes,
+  addSelectedBoxes,
+  joinSelectedBoxes,
+  clearAllSelected,
 } from './SudokuEngine';
 import { i } from 'node_modules/vite/dist/node/chunks/moduleRunnerTransport';
 
@@ -195,7 +204,7 @@ const cmdSet: CmdHandler = (schema, args) => {
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
-    if (!pos || !pos.row) {
+    if (!(pos && pos.row !== undefined)) {
       return err('用法: set 115 327 781');
     }
     if (!pos.col) {
@@ -236,7 +245,7 @@ const cmdAddHighlightRows: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hra 1 3 7');
   }
-  const rows = args.map((arg) => clampRC(Number(arg)));
+  const rows = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(addHighlightedRows(schema, rows));
 };
 
@@ -244,7 +253,7 @@ const cmdSetHighlightRows: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hrs 1 3 7');
   }
-  const rows = args.map((arg) => clampRC(Number(arg)));
+  const rows = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(setHighlightedRows(schema, rows));
 };
 
@@ -252,14 +261,14 @@ const cmdJoinHighlightRows: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hrj 1 3 7');
   }
-  const rows = args.map((arg) => clampRC(Number(arg)));
+  const rows = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(joinHighlightedRows(schema, rows));
 };
 const cmdAddHighlightCols: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hca 1 3 7');
   }
-  const cols = args.map((arg) => clampRC(Number(arg)));
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(addHighlightedCols(schema, cols));
 };
 
@@ -267,35 +276,35 @@ const cmdSetHighlightCols: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hcs 1 3 7');
   }
-  const cols = args.map((arg) => clampRC(Number(arg)));
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(setHighlightedCols(schema, cols));
 };
 const cmdJoinHighlightCols: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hcj 1 3 7');
   }
-  const cols = args.map((arg) => clampRC(Number(arg)));
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(joinHighlightedCols(schema, cols));
 };
 const cmdAddHighlightBoxes: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hba 1 3 7');
   }
-  const boxes = args.map((arg) => clampRC(Number(arg)));
+  const boxes = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(addHighlightedBoxes(schema, boxes));
 };
 const cmdSetHighlightBoxes: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hbs 1 3 7');
   }
-  const boxes = args.map((arg) => clampRC(Number(arg)));
+  const boxes = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(setHighlightedBoxes(schema, boxes));
 };
 const cmdJoinHighlightBoxes: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: hbj 1 3 7');
   }
-  const boxes = args.map((arg) => clampRC(Number(arg)));
+  const boxes = args.map((arg) => toZeroIdx(Number(arg)));
   return ok(joinHighlightedBoxes(schema, boxes));
 };
 const cmdAddHighlightCells: CmdHandler = (schema, args) => {
@@ -405,6 +414,7 @@ const cmdAddSelectCells: CmdHandler = (schema, args) => {
   return ok({ ...schema, cells: newCells });
 };
 const cmdSetSelectCells: CmdHandler = (schema, args) => {
+  console.log('cmdSetSelectCells-args', args);
   if (args.length === 0) {
     return err('用法: ss 11 32 78');
   }
@@ -412,7 +422,8 @@ const cmdSetSelectCells: CmdHandler = (schema, args) => {
   clearAllSelectedInplace(newCells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
-    if (!pos || !pos.row) {
+    console.log('cmdSetSelectCells-pos', pos);
+    if (!pos || pos.row === undefined) {
       return err('用法: ss 11 32 78');
     }
     if (!pos.col) {
@@ -428,6 +439,78 @@ const cmdSetSelectCells: CmdHandler = (schema, args) => {
   return ok({ ...schema, cells: newCells });
 };
 
+const cmdSetSelectRows: CmdHandler = (schema, args) => { 
+  if (args.length === 0) {
+    return err('用法: srs 1 3 7');
+  }
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(setSelectedRows(schema, cols));
+};
+
+const cmdAddSelectRows: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sra 1 3 7');
+  }
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(addSelectedRows(schema, cols));
+};
+
+const cmdJoinSelectRows: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: srj 1 3 7');
+  }
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(joinSelectedRows(schema, cols));
+};
+
+const cmdSetSelectCols: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: scs 1 3 7');
+  }
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(setSelectedCols(schema, cols));
+};
+
+const cmdAddSelectCols: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sca 1 3 7');
+  }
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(addSelectedCols(schema, cols));
+};
+const cmdJoinSelectCols: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: scj 1 3 7');
+  }
+  const cols = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(joinSelectedCols(schema, cols));
+};
+
+const cmdSetSelectBoxes: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sb 1 3 7');
+  }
+  const boxes = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(setSelectedBoxes(schema, boxes));
+};
+const cmdAddSelectBoxes: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sba 1 3 7');
+  }
+  const boxes = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(addSelectedBoxes(schema, boxes));
+};
+const cmdJoinSelectBoxes: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sbj 1 3 7');
+  }
+  const boxes = args.map((arg) => toZeroIdx(Number(arg)));
+  return ok(joinSelectedBoxes(schema, boxes));
+};
+
+const cmdUnSelectAll: CmdHandler = (schema) => {
+  return ok(clearAllSelected(schema));
+};
 const cmdAutoFillUniqueCandidate: CmdHandler = (schema) => {
   const result = autofillUniqueCandidate(schema);
   if (result === schema) {
@@ -438,13 +521,13 @@ const cmdAutoFillUniqueCandidate: CmdHandler = (schema) => {
 
 const cmdFillUniqueCandidate: CmdHandler = (schema, args) => {
   if (args.length === 0) {
-    return err('用法: f 11 32 78');
+    return err('用法: fuc 11 32 78');
   }
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
     if (!pos || !pos.row) {
-      return err('用法: fill 11 32 78');
+      return err('用法: fuc 11 32 78');
     }
     if (!pos.col) {
       setSelectRowInplace(newCells, pos.row);
@@ -519,12 +602,13 @@ const cmdNew: CmdHandler = (_schema, args) => {
   if (args.length < 1 || args[0].length < 81) {
     return err('用法: new 123456789123456789123456789123456789123456789123456789123456789123456789123456789');
   }
+  const arg = args[0];
 
   for (let i = 0; i < 9; i++) {
     nums.push([])
     for (let j = 0; j < 9; j++) {
       const idx = i * 9 + j; 
-      nums[i].push(Number(args[idx]));
+      nums[i].push(Number(arg[idx]));
     }
   }
   return ok(createNewSchema(nums));
@@ -547,30 +631,53 @@ function initRegistry(): void {
   register('set', cmdSet); // set 
   register('unset', cmdUnset); // unset 
   register('hra', cmdAddHighlightRows); // highlight rows
+  register('hr', cmdSetHighlightRows); // set highlight rows
   register('hrs', cmdSetHighlightRows); // set highlight rows
   register('hrj', cmdJoinHighlightRows); // join highlight rows
   register('hca', cmdAddHighlightCols); // highlight cols
+  register('hc', cmdSetHighlightCols); // set highlight cols
   register('hcs', cmdSetHighlightCols); // set highlight cols
   register('hcj', cmdJoinHighlightCols); // join highlight cols
   register('hba', cmdAddHighlightBoxes); // highlight boxes
+  register('hb', cmdSetHighlightBoxes); // set highlight boxes
   register('hbs', cmdSetHighlightBoxes); // set highlight boxes
   register('hbj', cmdJoinHighlightBoxes); // join highlight boxes
   register('hda', cmdAddHighlightDigits); // highlight digits
+  register('h', cmdSetHighlightDigits); // set highlight digits
+  register('hd', cmdSetHighlightDigits); // set highlight digits
   register('hds', cmdSetHighlightDigits); // set highlight digits
   register('hdj', cmdJoinHighlightDigits); // join highlight digits
   register('ha', cmdAddHighlightCells); // highlight cells
   register('hs', cmdSetHighlightCells); // set highlight cells
+  register('hxy', cmdSetHighlightXY); // set highlight xy
   register('hxys', cmdSetHighlightXY); // set highlight xy
   register('hxya', cmdAddHighlightXY); // add highlight xy
   register('hxyj', cmdJoinHighlightXY); // join highlight xy
   register('uh', cmdUnHighlightAll); // unhighlight all
+  register('s', cmdSetSelectCells); // set select cells
   register('ss', cmdSetSelectCells); // set select cells
   register('sa', cmdAddSelectCells); // add select cells
+  register('sr', cmdSetSelectRows);
+  register('srs', cmdSetSelectRows);
+  register('sra', cmdAddSelectRows);
+  register('srj', cmdJoinSelectRows);
+  register('sc', cmdSetSelectCols);
+  register('scs', cmdSetSelectCols);
+  register('scc', cmdAddSelectCols);
+  register('scj', cmdJoinSelectCols);
+  register('sb', cmdSetSelectBoxes);
+  register('sbs', cmdSetSelectBoxes);
+  register('sba', cmdAddSelectBoxes);
+  register('sbj', cmdJoinSelectBoxes);
+  register('us', cmdUnSelectAll);
+
 
   register('fuc', cmdFillUniqueCandidate);
   register('fur', cmdFillUniqueRow);
   register('fuc', cmdFillUniqueCol);
   register('fub', cmdFillUniqueBox);
+
+  register('autofuc', cmdAutoFillUniqueCandidate);
 
   register('new', cmdNew);
   // undo/redo 标记为 noop，由外部处理

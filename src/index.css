@@ -47,6 +47,7 @@
 
     --sudoku-border-thin: 220 13% 85%;
     --sudoku-border-thick: 222 47% 30%;
+    --sudoku-selected-cell-border: 252 83% 59%;
 
     --sudoku-given: 222 47% 11%;
     --sudoku-filled: 217 91% 45%;

@@ -41,6 +41,7 @@ const getColors = () => {
     cellRelated: getCSSColor('--sudoku-cell-same-row-col-box'),
     borderThin: getCSSColor('--sudoku-border-thin'),
     borderThick: getCSSColor('--sudoku-border-thick'),
+    selectedCellBorder: getCSSColor('--sudoku-selected-cell-border'),
     given: getCSSColor('--sudoku-given'),
     filled: getCSSColor('--sudoku-filled'),
     error: getCSSColor('--sudoku-error'),
@@ -203,7 +204,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
     // 渲染所有单元格
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
-        const cell = schema.cells[row][col];
+        const cell = schema.cells && schema.cells.length === 9? schema.cells[row][col] : {};
         const x = padding + col * actualCellSize;
         const y = padding + row * actualCellSize;
 
@@ -264,6 +265,13 @@ function drawCell(
   // 绘制背景
   ctx.fillStyle = bgColor;
   ctx.fillRect(x, y, cellSize, cellSize);
+
+  if (cell.isSelected) {
+    // 加粗边框
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = colors.selectedCellBorder;
+    ctx.strokeRect(x+ctx.lineWidth/2, y+ctx.lineWidth/2, cellSize-ctx.lineWidth, cellSize-ctx.lineWidth);
+  }
 
   // 绘制主值
   if (cell.digit) {

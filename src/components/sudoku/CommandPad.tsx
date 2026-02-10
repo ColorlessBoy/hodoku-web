@@ -106,6 +106,11 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     [setHistory]
   );
 
+  const cleanHistory = useCallback(() => {
+    setHistory([]);
+    setHistoryIdx(-1);
+  }, [setHistory]);
+
   // 使用 CmdEngine 处理命令
   const handleExec = useCallback(() => {
     if (!input.trim()) return;
@@ -135,6 +140,9 @@ export const CommandPad: React.FC<CommandPadProps> = ({
       // 可以在这里显示错误消息
       console.error('Command failed:', result.msg);
     } else {
+      if (trimmed === 'new') {
+        cleanHistory();
+      }
       // 执行成功，更新 schema
       replaceSchema(finalSchema);
     }

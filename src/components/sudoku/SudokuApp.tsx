@@ -43,7 +43,7 @@ export const SudokuApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
+      <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-start">
         {/* 数独盘面 */}
         <div className="flex flex-col gap-4">
           <SudokuGrid
@@ -58,14 +58,6 @@ export const SudokuApp: React.FC = () => {
       <div className="flex flex-col gap-4">
         <CommandPad
           schema={schema}
-          selectCell={selectCell}
-          setCellValue={setCellValue}
-          toggleCornerCandidate={toggleCornerCandidate}
-          setCellColor={setCellColor}
-          setCandidateColor={setCandidateColor}
-          addLink={addLink}
-          clearLinks={clearLinks}
-          clearCell={clearCell}
           replaceSchema={replaceSchema}
         />
         {/* NumberPad with state */}

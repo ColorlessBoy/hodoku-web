@@ -37,7 +37,7 @@ export function cloneSchema(schema: SudokuSchema): SudokuSchema {
         })
       )
     ),
-    links: schema.links.map((link) => ({ ...link })),
-    superLinks: schema.superLinks.map((link) => ({ ...link })),
+    links: schema.links?.map((link) => ({ ...link })),
+    superLinks: schema.superLinks?.map((link) => ({ ...link })),
   };
 }
