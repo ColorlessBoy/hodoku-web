@@ -72,8 +72,6 @@ export interface Cell {
   color?: CellColor; // 单元格背景色
   isSelected?: boolean; // 是否被选中
   isHighlighted?: boolean; // 是否高亮
-  isSameValue?: boolean; // 是否与选中格相同值
-  isRelated?: boolean; // 是否与选中格同行/列/宫
 
   // 错误状态
   hasConflict?: boolean; // 是否有冲突
@@ -347,7 +345,7 @@ function abstractJoinHighlighted(schema: SudokuSchema, cond: (cell: Cell) => boo
   return abstractJoin(schema, cond, checkTrue, newTrue, newFalse);
 }
 function abstractSubHighlighted(schema: SudokuSchema, cond: (cell: Cell) => boolean): SudokuSchema {
-  const checkTrue = (cell: Cell) => cell.isHighlighted;
+  const checkTrue = (cell: Cell) => cell.isHighlighted !== true;
   const newFalse = (cell: Cell) => ({ ...cell, isHighlighted: false });
   return abstractSet(schema, cond, checkTrue, newFalse, newFalse);
 }
@@ -552,7 +550,7 @@ function abstractAddSelected(schema: SudokuSchema, cond: (cell: Cell) => boolean
 }
 
 function abstractSubSelected(schema: SudokuSchema, cond: (cell: Cell) => boolean): SudokuSchema {
-  const checkState = (cell: Cell) => cell.isSelected;
+  const checkState = (cell: Cell) => cell.isSelected !== true;
   const newFalse = (cell: Cell) => ({ ...cell, isSelected: false });
   return abstractAdd(schema, cond, checkState, newFalse);
 }
@@ -1649,14 +1647,12 @@ export function setSelectedCellInplace(cells: Cell[][], row: number, col: number
 }
 
 export function fillUniqueCandidateInplace(cells: Cell[][], row: number, col: number): number {
-  if (cells[row][col].cornerCandidates === null) {
+  console.log('fillUniqueCandidateInplace', row, col)
+  if (cells.length !== 9 || cells[row][col].cornerCandidates === null || cells[row][col].cornerCandidates.length !== 1) {
     return -1;
   }
-  if (cells[row][col].cornerCandidates.length === 1){
-    setCellInplace(cells, row, col, cells[row][col].cornerCandidates[0].digit);
-    return 0;
-  }
-  return -1;
+  setCellInplace(cells, row, col, cells[row][col].cornerCandidates[0].digit);
+  return 0;
 }
 
 export function fillUniqueRowInplace(cells: Cell[][], row: number, digit: Digit): number {

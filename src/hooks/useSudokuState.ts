@@ -35,21 +35,10 @@ export const useSudokuState = () => {
       return cells.map((row, rowIndex) =>
         row.map((cell, colIndex): Cell => {
           const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
-          const isRelated = selectedCell
-            ? isInSameUnit({ row: rowIndex, col: colIndex, box: getBoxIndex(rowIndex, colIndex) }, selectedCell) && !isSelected
-            : false;
-          const isSameValue =
-            selectedCell && cells[selectedCell.row][selectedCell.col].digit
-              ? cell.digit === cells[selectedCell.row][selectedCell.col].digit
-              : highlightedDigit
-                ? cell.digit === highlightedDigit
-                : false;
 
           return {
             ...cell,
             isSelected,
-            isRelated,
-            isSameValue: isSameValue && !isSelected,
             isHighlighted: highlightedDigit ? cell.digit === highlightedDigit : false,
           };
         })

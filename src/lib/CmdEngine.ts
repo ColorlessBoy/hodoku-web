@@ -207,7 +207,7 @@ const cmdSet: CmdHandler = (schema, args) => {
     if (!(pos && pos.row !== undefined)) {
       return err('用法: set 115 327 781');
     }
-    if (!pos.col) {
+    if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
       break; // 自动改成 Select 操作, 并且只处理到不全的位置
     } else if (!pos.digit) {
@@ -227,10 +227,10 @@ const cmdUnset: CmdHandler = (schema, args) => {
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
-    if (!pos || !pos.row) {
+    if (!pos || pos.row === undefined) {
       return err('用法: c 11 32 78');
     }
-    if (!pos.col) {
+    if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
       break; // 自动改成 Select 操作, 并且只处理到不全的位置
     } else {
@@ -314,10 +314,10 @@ const cmdAddHighlightCells: CmdHandler = (schema, args) => {
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
-    if (!pos || !pos.row) {
+    if (!pos || pos.row === undefined) {
       return err('用法: ha 11 32 78');
     }
-    if (!pos.col) {
+    if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
       break; // 自动改成 Select 操作, 并且只处理到不全的位置
     } else if (!pos.digit) {
@@ -337,10 +337,10 @@ const cmdSetHighlightCells: CmdHandler = (schema, args) => {
   clearAllHighlightedInplace(newCells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
-    if (!pos || !pos.row) {
+    if (!pos || pos.row === undefined) {
       return err('用法: hs 11 32 78');
     }
-    if (!pos.col) {
+    if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
       break; // 自动改成 Select 操作, 并且只处理到不全的位置
     } else if (!pos.digit) {
@@ -398,10 +398,10 @@ const cmdAddSelectCells: CmdHandler = (schema, args) => {
   clearAllSelectedInplace(newCells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
-    if (!pos || !pos.row) {
+    if (!pos || pos.row === undefined) {
       return err('用法: sa 11 32 78');
     }
-    if (!pos.col) {
+    if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
       break; // 自动改成 Select 操作, 并且只处理到不全的位置
     } else if (!pos.digit) {
@@ -426,7 +426,7 @@ const cmdSetSelectCells: CmdHandler = (schema, args) => {
     if (!pos || pos.row === undefined) {
       return err('用法: ss 11 32 78');
     }
-    if (!pos.col) {
+    if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
       break; // 自动改成 Select 操作, 并且只处理到不全的位置
     } else if (!pos.digit) {
@@ -520,16 +520,18 @@ const cmdAutoFillUniqueCandidate: CmdHandler = (schema) => {
 };
 
 const cmdFillUniqueCandidate: CmdHandler = (schema, args) => {
+  console.log('cmdFillUniqueCandidate-args', args)
   if (args.length === 0) {
     return err('用法: fuc 11 32 78');
   }
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
-    if (!pos || !pos.row) {
+    console.log('cmdFillUniqueCandidate-pos', pos)
+    if (!pos || pos.row === undefined) {
       return err('用法: fuc 11 32 78');
     }
-    if (!pos.col) {
+    if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
     } else {
       fillUniqueCandidateInplace(newCells, pos.row, pos.col);
@@ -545,7 +547,7 @@ const cmdFillUniqueRow: CmdHandler = (schema, args) => {
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parseRowDigit(arg);
-    if (!pos || !pos.row) {
+    if (!pos || pos.row === undefined) {
       return err('用法: fur 11 32 78');
     } else if (!pos.digit) {
       setSelectRowInplace(newCells, pos.row);
@@ -564,7 +566,7 @@ const cmdFillUniqueCol: CmdHandler = (schema, args) => {
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parseColDigit(arg);
-    if (!pos || !pos.col) {
+    if (!pos || pos.col === undefined) {
       return err('用法: fuc 11 32 78');
     } else if (!pos.digit) {
       setSelectColInplace(newCells, pos.col);
@@ -583,7 +585,7 @@ const cmdFillUniqueBox: CmdHandler = (schema, args) => {
   const newCells = cloneCells(schema.cells);
   for (const arg of args) {
     const pos = parseBoxDigit(arg);
-    if (!pos || !pos.box) {
+    if (!pos || pos.box === undefined) {
       return err('用法: fub 11 32 78');
     } else if (!pos.digit) {
       setSelectBoxInplace(newCells, pos.box);
@@ -672,7 +674,7 @@ function initRegistry(): void {
   register('us', cmdUnSelectAll);
 
 
-  register('fuc', cmdFillUniqueCandidate);
+  register('fu', cmdFillUniqueCandidate);
   register('fur', cmdFillUniqueRow);
   register('fuc', cmdFillUniqueCol);
   register('fub', cmdFillUniqueBox);
@@ -714,7 +716,9 @@ export function executeCommand(schema: SudokuSchema, command: string): CmdResult
   }
 
   try {
-    return handler(schema, args);
+    const schema2 = handler(schema, args);
+    console.log(cmd, schema2)
+    return schema2
   } catch (e) {
     return err(`执行错误: ${e instanceof Error ? e.message : String(e)}`);
   }
