@@ -42,10 +42,10 @@ export const SudokuApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-start justify-center p-4">
-      <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-start">
+    <div className="h-screen bg-background flex items-start justify-center p-4 overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-start w-full max-w-7xl h-full">
         {/* 数独盘面 */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 flex-shrink-0">
           <SudokuGrid
             schema={schema}
             onCellClick={handleCellClick}
@@ -53,55 +53,13 @@ export const SudokuApp: React.FC = () => {
             size={Math.min(window.innerHeight - 64, window.innerWidth - 64)}
           />
         </div>
-      </div>
-      {/* 数独操作面板 */}
-      <div className="flex flex-col gap-4">
-        <CommandPad
-          schema={schema}
-          replaceSchema={replaceSchema}
-        />
-        {/* NumberPad with state */}
-        <div className="bg-card rounded-xl p-4 shadow-lg border border-border">
-          <div className="flex gap-2">
-            <button
-              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                mode === 'normal'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-              onClick={() => setMode('normal')}
-            >
-              正常
-            </button>
-            <button
-              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                mode === 'corner'
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              }`}
-              onClick={() => setMode('corner')}
-            >
-              角注
-            </button>
-          </div>
-          <div className="grid grid-cols-5 gap-2 mt-4">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((digit) => (
-              <button
-                key={digit}
-                className="aspect-square flex items-center justify-center text-xl font-semibold rounded-lg transition-all bg-card hover:bg-accent border border-border shadow-sm hover:shadow-md active:scale-95"
-                onClick={() => handleNumberClick(digit as Digit)}
-              >
-                {digit}
-              </button>
-            ))}
-            <button
-              className="aspect-square flex items-center justify-center rounded-lg transition-all bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 shadow-sm
-              hover:shadow-md active:scale-95 text-destructive"
-              onClick={handleClear}
-            >
-              ✕
-            </button>
-          </div>
+
+        {/* 数独操作面板 */}
+        <div className="flex flex-col gap-4 flex-1 min-w-0 h-full overflow-hidden">
+          <CommandPad
+            schema={schema}
+            replaceSchema={replaceSchema}
+          />
         </div>
       </div>
     </div>

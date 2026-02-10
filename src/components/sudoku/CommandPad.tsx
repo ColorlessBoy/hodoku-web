@@ -1,8 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SudokuSchema } from '@/types/sudoku';
 import { cloneSchema } from '@/lib/schemaAdapter';
 import { executeCommands } from '@/lib/CmdEngine';
 import { cn } from '@/lib/utils';
+import { CommandHelp } from './CommandHelp';
+
+// 导入并注册所有命令
+import { preloadAllCommands } from '@/lib/commands';
+
+// 立即注册所有命令
+preloadAllCommands();
 
 interface CommandPadProps {
   schema: SudokuSchema;
@@ -178,8 +185,8 @@ export const CommandPad: React.FC<CommandPadProps> = ({
   );
 
   return (
-    <div className="bg-card rounded-xl p-4 shadow-lg border border-border">
-      <h3 className="text-sm font-semibold text-muted-foreground mb-3">命令</h3>
+    <div className="bg-card rounded-xl p-4 shadow-lg border border-border flex flex-col h-full overflow-hidden">
+      <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex-shrink-0">命令</h3>
       <div className="flex gap-2">
         <input
           ref={inputRef}
@@ -219,7 +226,8 @@ export const CommandPad: React.FC<CommandPadProps> = ({
           重做
         </button>
       </div>
-      <div className="mt-3 max-h-40 overflow-y-auto rounded-md border border-input">
+      {/* 命令历史 - 固定高度 */}
+      <div className="mt-3 h-24 flex-shrink-0 overflow-y-auto rounded-md border border-input">
         {history.length === 0 ? (
           <div className="text-xs text-muted-foreground p-2">暂无历史</div>
         ) : (
@@ -235,34 +243,10 @@ export const CommandPad: React.FC<CommandPadProps> = ({
           </ul>
         )}
       </div>
-      <div className="mt-3 text-[11px] text-muted-foreground space-y-1">
-        <div>new xxx - 导入新题目</div>
-        <div>set 11 5 - 设置格子值</div>
-        <div>unset 11 - 取消设置格子值</div>
-        <div>hra 1 2 3 - 添加高亮行</div>
-        <div>hrs 1 2 3 - 高亮行</div>
-        <div>hrj 1 2 3 - 高亮行(交集)</div>
-        <div>hca 1 2 3 - 添加高亮列</div>
-        <div>hcs 1 2 3 - 高亮列</div>
-        <div>hcj 1 2 3 - 高亮列(交集)</div>
-        <div>hba 1 2 3 - 添加高亮区</div>
-        <div>hbs 1 2 3 - 高亮区</div>
-        <div>hbj 1 2 3 - 高亮区(交集)</div>
-        <div>hda 1 2 3 - 添加高亮数字</div>
-        <div>hds 1 2 3 - 高亮数字</div>
-        <div>hdj 1 2 3 - 高亮数字(交集)</div>
-        <div>ha 12 23 34 - 添加高亮格子</div>
-        <div>hs 12 23 34 - 高亮格子</div>
-        <div>hxys - 高亮2个后续数的格子</div>
-        <div>hxya - 添加高亮2个后续数的格子</div>
-        <div>hxyj - 高亮2个后续数的格子(交集)</div>
-        <div>uh - 取消高亮</div>
-        <div>ss 12 34 42 - 选择格子</div>
-        <div>sa 12 34 42 - 添加选择格子</div>
-        <div>fuc 12 - 填充唯一后续数格子</div>
-        <div>fur 23 - 行内唯一数</div>
-        <div>fuc 23 - 列内唯一数</div>
-        <div>fub 23 - 区内唯一数</div>
+
+      {/* 动态命令帮助面板 - 自动占据剩余空间，超出时内部滚动 */}
+      <div className="mt-3 flex-1 min-h-0 overflow-hidden flex flex-col">
+        <CommandHelp searchable={false} collapsible={true} />
       </div>
     </div>
   );

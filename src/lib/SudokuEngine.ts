@@ -111,9 +111,15 @@ export interface SudokuSchema {
   superLinks: SuperLink[];
 }
 
-export function createNewSchema(nums: number[][]): SudokuSchema {
-  if(nums.length !== 9 || nums[0].length !== 9) {
+export function createNewSchema(nums: number[][]): SudokuSchema | null {
+  if (nums.length !== 9) {
     return null;
+  }
+  // Check all rows have 9 columns
+  for (let i = 0; i < 9; i++) {
+    if (!nums[i] || nums[i].length !== 9) {
+      return null;
+    }
   }
   const cells: Cell[][] = [];
 
@@ -1099,14 +1105,16 @@ export function nakedPair(
   if (!(cell1.cornerCandidates?.length === 2 && cell2.cornerCandidates.length === 2)) {
     return schema;
   }
-  if (
-    !(
-      cell1.cornerCandidates?.some((c) => c.digit === digit1) &&
-      cell1.cornerCandidates?.some((c) => c.digit === digit2) &&
-      cell2.cornerCandidates?.some((c) => c.digit === digit1) &&
-      cell2.cornerCandidates?.some((c) => c.digit === digit2)
-    )
-  ) {
+  // Safe access to cornerCandidates
+  const cell1Candidates = cell1?.cornerCandidates ?? [];
+  const cell2Candidates = cell2?.cornerCandidates ?? [];
+
+  const hasDigit1InCell1 = cell1Candidates.some((c) => c.digit === digit1);
+  const hasDigit2InCell1 = cell1Candidates.some((c) => c.digit === digit2);
+  const hasDigit1InCell2 = cell2Candidates.some((c) => c.digit === digit1);
+  const hasDigit2InCell2 = cell2Candidates.some((c) => c.digit === digit2);
+
+  if (!(hasDigit1InCell1 && hasDigit2InCell1 && hasDigit1InCell2 && hasDigit2InCell2)) {
     return schema;
   }
   if (cell1.position.row === cell2.position.row) {
@@ -1648,10 +1656,17 @@ export function setSelectedCellInplace(cells: Cell[][], row: number, col: number
 
 export function fillUniqueCandidateInplace(cells: Cell[][], row: number, col: number): number {
   console.log('fillUniqueCandidateInplace', row, col)
-  if (cells.length !== 9 || cells[row][col].cornerCandidates === null || cells[row][col].cornerCandidates.length !== 1) {
+  // Add bounds checking
+  if (cells.length !== 9 || row < 0 || row >= 9 || col < 0 || col >= 9) {
     return -1;
   }
-  setCellInplace(cells, row, col, cells[row][col].cornerCandidates[0].digit);
+  const cell = cells[row][col];
+  // Safe access to cornerCandidates
+  const candidates = cell?.cornerCandidates;
+  if (!candidates || candidates.length !== 1) {
+    return -1;
+  }
+  setCellInplace(cells, row, col, candidates[0].digit);
   return 0;
 }
 
