@@ -1647,12 +1647,11 @@ export function setSelectedCellInplace(cells: Cell[][], row: number, col: number
     for (let c = 0; c < 9; c++) {
       if (r === row && c === col) {
         cells[r][c].isSelected = true;
-      } else {
-        cells[r][c].isSelected = false;
-      }
+      } 
     }
   }
 }
+
 
 export function fillUniqueCandidateInplace(cells: Cell[][], row: number, col: number): number {
   console.log('fillUniqueCandidateInplace', row, col)

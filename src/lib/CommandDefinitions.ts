@@ -250,9 +250,6 @@ const cmdAddHighlightCells: CmdHandler = (schema, args) => {
     if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
       break;
-    } else if (!pos.digit) {
-      setSelectCellInplace(newCells, pos.row, pos.col);
-      break;
     } else {
       addHighlightedCellInplace(newCells, pos.row, pos.col);
     }
@@ -273,9 +270,6 @@ const cmdSetHighlightCells: CmdHandler = (schema, args) => {
     }
     if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
-      break;
-    } else if (!pos.digit) {
-      setSelectCellInplace(newCells, pos.row, pos.col);
       break;
     } else {
       addHighlightedCellInplace(newCells, pos.row, pos.col);
@@ -330,7 +324,6 @@ const cmdAddSelectCells: CmdHandler = (schema, args) => {
     return err('用法: sa 11 32 78');
   }
   const newCells = cloneCells(schema.cells);
-  clearAllSelectedInplace(newCells);
   for (const arg of args) {
     const pos = parsePosDigit(arg);
     if (!pos || pos.row === undefined) {
@@ -338,9 +331,6 @@ const cmdAddSelectCells: CmdHandler = (schema, args) => {
     }
     if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
-      break;
-    } else if (!pos.digit) {
-      setSelectCellInplace(newCells, pos.row, pos.col);
       break;
     } else {
       setSelectedCellInplace(newCells, pos.row, pos.col);
@@ -362,9 +352,6 @@ const cmdSetSelectCells: CmdHandler = (schema, args) => {
     }
     if (pos.col === undefined) {
       setSelectRowInplace(newCells, pos.row);
-      break;
-    } else if (!pos.digit) {
-      setSelectCellInplace(newCells, pos.row, pos.col);
       break;
     } else {
       setSelectedCellInplace(newCells, pos.row, pos.col);
