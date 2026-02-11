@@ -1654,7 +1654,6 @@ export function setSelectedCellInplace(cells: Cell[][], row: number, col: number
 
 
 export function fillUniqueCandidateInplace(cells: Cell[][], row: number, col: number): number {
-  console.log('fillUniqueCandidateInplace', row, col)
   // Add bounds checking
   if (cells.length !== 9 || row < 0 || row >= 9 || col < 0 || col >= 9) {
     return -1;
