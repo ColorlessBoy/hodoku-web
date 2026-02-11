@@ -4,7 +4,7 @@
  * 统一注册命令的元数据和处理器，解决命令分散的问题
  */
 
-import type { SudokuSchema, Digit } from '@/types/sudoku';
+import type { SudokuSchema, Digit, CandidateColor } from '@/types/sudoku';
 import type { CmdResult, CmdHandler, PosDigit } from './CmdEngine';
 import { registerCommand } from './CommandRegistry';
 import {
@@ -51,6 +51,15 @@ import {
   setSelectColInplace,
   setSelectBoxInplace,
   createNewSchema,
+  setSelectedDigits,
+  addSelectedDigits,
+  joinSelectedDigits,
+  restartSchema,
+  setCandidatesColorCellInplace,
+  setCandidatesColorRowInplace,
+  setCandidatesColorColInplace,
+  setCandidatesColorBoxInplace,
+  joinSelectedDigitInplace,
 } from './SudokuEngine';
 
 // ============================================================================
@@ -68,16 +77,11 @@ const noop = (): CmdResult => ({ type: 'noop' });
 /** 解析 115 格式的位置+数字 */
 export function parsePosDigit(token: string): PosDigit | null {
   const t = token.trim().toLowerCase();
-
-  if (t.length >= 2) {
-    const row = toZeroIdx(Number(t[0]));
-    const col = toZeroIdx(Number(t[1]));
-    const box = getBoxIndex(row, col);
-    const digit = t.length > 2 ? (clampRC(Number(t[2])) as Digit) : undefined;
-    return { row, col, box, digit };
-  }
-
-  return null;
+  const row = (t.length <= 0)? undefined: toZeroIdx(Number(t[0]));
+  const col = (t.length <= 1)? undefined: toZeroIdx(Number(t[1]));
+  const box = (t.length <= 1)? undefined: getBoxIndex(row, col);
+  const digit = (t.length <= 2)? undefined: (clampRC(Number(t[2])) as Digit);
+  return { row, col, box, digit };
 }
 
 export function parseRowDigit(token: string): { row: number; digit?: Digit } | null {
@@ -437,6 +441,29 @@ const cmdAddSelectBoxes: CmdHandler = (schema, args) => {
   return ok(addSelectedBoxes(schema, boxes));
 };
 
+const cmdSetSelectDigits: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sd 1 3 7');
+  }
+  const digits = args.map((arg) => clampRC(Number(arg)) as Digit);
+  return ok(setSelectedDigits(schema, digits));
+};
+
+const cmdAddSelectDigits: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sda 1 3 7');
+  }
+  const digits = args.map((arg) => clampRC(Number(arg)) as Digit);
+  return ok(addSelectedDigits(schema, digits));
+};
+
+const cmdJoinSelectDigits: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: sdj 1 3 7');
+  }
+  const digits = args.map((arg) => clampRC(Number(arg)) as Digit);
+  return ok(joinSelectedDigits(schema, digits));
+};
 const cmdJoinSelectBoxes: CmdHandler = (schema, args) => {
   if (args.length === 0) {
     return err('用法: sbj 1 3 7');
@@ -449,6 +476,101 @@ const cmdUnSelectAll: CmdHandler = (schema) => {
   return ok(clearAllSelected(schema));
 };
 
+// 染色命令
+const cmdSetCandidateColorCell: CmdHandler = (schema, args) => { 
+  if (args.length === 0) {
+    return err('用法: nc <row><col><digit><colornum>');
+  }
+  const newCells = cloneCells(schema.cells);
+  const pos = parsePosDigit(args[0]);
+  if (!pos || pos.row === undefined) {
+    return err('用法: nc <row><col><digit><colornum>');
+  }
+  if (pos.col === undefined) {
+    setSelectRowInplace(newCells, pos.row);
+    return intermediate({ ...schema, cells: newCells });
+  } else if (pos.digit === undefined) {
+    setSelectCellInplace(newCells, pos.row, pos.col);
+    return intermediate({ ...schema, cells: newCells });
+  } else if (args[0].length < 4) {
+    setSelectCellInplace(newCells, pos.row, pos.col);
+    setCandidatesColorCellInplace(newCells, pos.row, pos.col, pos.digit, 1 as CandidateColor);
+    return intermediate({ ...schema, cells: newCells });
+  } else {
+    const color = clampRC(Number(args[0][3])) as CandidateColor;
+    setCandidatesColorCellInplace(newCells, pos.row, pos.col, pos.digit, color);
+  }
+  return ok({ ...schema, cells: newCells });
+};
+
+const cmdSetCandidateColorRow: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: ncr <row><digit><colornum>');
+  }
+  const newCells = cloneCells(schema.cells);
+  const pos = parseRowDigit(args[0]);
+  if (!pos || pos.row === undefined) {
+    return err('用法: ncr <row><digit><colornum>');
+  } else if (pos.digit === undefined) {
+    setSelectRowInplace(newCells, pos.row);
+    return intermediate({ ...schema, cells: newCells });
+  } else if (args[0].length < 3) {
+    setSelectRowInplace(newCells, pos.row);
+    joinSelectedDigitInplace(newCells, pos.digit);
+    setCandidatesColorRowInplace(newCells, pos.row, pos.digit, 1 as CandidateColor);
+    return intermediate({ ...schema, cells: newCells });
+  } else {
+    const color = clampRC(Number(args[0])) as CandidateColor;
+    setCandidatesColorRowInplace(newCells, pos.row, pos.digit, color);
+  }
+  return ok({ ...schema, cells: newCells });
+}
+
+const cmdSetCandidateColorCol: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: ncc <col><digit><colornum>');
+  }
+  const newCells = cloneCells(schema.cells);
+  const pos = parseColDigit(args[0]);
+  if (!pos || pos.col === undefined) {
+    return err('用法: ncc <col><digit><colornum>');
+  } else if (pos.digit === undefined) {
+    setSelectColInplace(newCells, pos.col);
+    return intermediate({ ...schema, cells: newCells });
+  } else if (args[0].length < 3) {
+    setSelectColInplace(newCells, pos.col);
+    joinSelectedDigitInplace(newCells, pos.digit);
+    setCandidatesColorColInplace(newCells, pos.col, pos.digit, 1 as CandidateColor);
+    return intermediate({ ...schema, cells: newCells });
+  } else {
+    const color = clampRC(Number(args[0])) as CandidateColor;
+    setCandidatesColorColInplace(newCells, pos.col, pos.digit, color);
+  }
+  return ok({ ...schema, cells: newCells });
+}
+
+const cmdSetCandidateColorBox: CmdHandler = (schema, args) => {
+  if (args.length === 0) {
+    return err('用法: ncb <box><digit><colornum>');
+  }
+  const newCells = cloneCells(schema.cells);
+  const pos = parseBoxDigit(args[0]);
+  if (!pos || pos.box === undefined) {
+    return err('用法: ncb <box><digit><colornum>');
+  } else if (pos.digit === undefined) {
+    setSelectBoxInplace(newCells, pos.box);
+    return intermediate({ ...schema, cells: newCells });
+  } else if (args[0].length < 3) {
+    setSelectBoxInplace(newCells, pos.box);
+    joinSelectedDigitInplace(newCells, pos.digit);
+    setCandidatesColorColInplace(newCells, pos.col, pos.digit, 1 as CandidateColor);
+    return intermediate({ ...schema, cells: newCells });
+  } else {
+    const color = clampRC(Number(args[0])) as CandidateColor;
+    setCandidatesColorBoxInplace(newCells, pos.box, pos.digit, color);
+  }
+  return ok({ ...schema, cells: newCells });
+}
 // 自动填充命令
 const cmdAutoFillUniqueCandidate: CmdHandler = (schema) => {
   const result = autofillUniqueCandidate(schema);
@@ -551,6 +673,10 @@ const cmdNew: CmdHandler = (_schema, args) => {
   }
   return ok(createNewSchema(nums));
 };
+
+const cmdRestart: CmdHandler = (schema, args) => {
+  return ok(restartSchema(schema));
+}
 
 // ============================================================================
 // 初始化所有命令
@@ -945,6 +1071,42 @@ export function initializeCommands(): void {
     cmdJoinSelectBoxes
   );
 
+  registerCommand(
+    {
+      name: 'sds',
+      aliases: ['sd'],
+      description: '设置选择数字（替换现有）',
+      category: 'select',
+      args: [{ type: 'digit', name: 'digits', description: '数字 1-9', repeatable: true }],
+      examples: ['sd 1 3 7'],
+    },
+    cmdSetSelectDigits
+  );
+
+  registerCommand(
+    {
+      name: 'sda',
+      aliases: [],
+      description: '添加选择数字',
+      category: 'select',
+      args: [{ type: 'digit', name: 'digits', description: '数字 1-9', repeatable: true }],
+      examples: ['sda 1 3 7'],
+    },
+    cmdAddSelectDigits
+  );
+
+  registerCommand(
+    {
+      name: 'sdj',
+      aliases: [],
+      description: '选择数字取交集',
+      category: 'select',
+      args: [{ type: 'digit', name: 'digits', description: '数字 1-9', repeatable: true }],
+      examples: ['sdj 1 3 7'],
+    },
+    cmdJoinSelectDigits
+  );
+
   // 取消选择
   registerCommand(
     {
@@ -956,6 +1118,52 @@ export function initializeCommands(): void {
       examples: ['us'],
     },
     cmdUnSelectAll
+  );
+  
+  // 染色
+  registerCommand(
+    {
+      name: 'notecolor',
+      aliases: ['nc'],
+      description: '候选数染色',
+      category: 'auto',
+      args: [{ type: 'pos', name: '行列数色', description: '如 1123', repeatable: false}],
+      examples: ['nc 1123']
+    }, 
+    cmdSetCandidateColorCell
+  );
+  registerCommand(
+    {
+      name: 'noterowcolor',
+      aliases: ['nrc'],
+      description: '行内候选数染色',
+      category: 'auto',
+      args: [{ type: 'row', name: '行数色', description: '如 113', repeatable: false}],
+      examples: ['nrc 113']
+    }, 
+    cmdSetCandidateColorRow
+  );
+  registerCommand(
+    {
+      name: 'notecolcolor',
+      aliases: ['ncc'],
+      description: '列内候选数染色',
+      category: 'auto',
+      args: [{ type: 'col', name: '列数色', description: '如 113', repeatable: false}],
+      examples: ['ncc 113']
+    }, 
+    cmdSetCandidateColorCol
+  );
+  registerCommand(
+    {
+      name: 'notecolboxcolor',
+      aliases: ['ncb'],
+      description: '宫内候选数染色',
+      category: 'auto',
+      args: [{ type: 'box', name: '宫数色', description: '如 113', repeatable: false}],
+      examples: ['ncb 113']
+    }, 
+    cmdSetCandidateColorBox
   );
 
   // 自动填充
@@ -1030,6 +1238,19 @@ export function initializeCommands(): void {
       examples: ['new 530070000600195000098006800800060003400803001700020006060000280000419005000080079'],
     },
     cmdNew
+  );
+
+  // 重新做题目
+  registerCommand(
+    {
+      name: 'restart',
+      aliases: [],
+      description: '重新做题目',
+      category: 'new',
+      args: [],
+      examples: ['restart'],
+    },
+    cmdRestart
   );
 
   // 撤销/重做

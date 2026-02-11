@@ -1,6 +1,6 @@
 
-export type CellColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
-export type CandidateColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | null;
+export type CellColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | null;
+export type CandidateColor = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | null;
 export type Digit = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 export interface CellPosition {
@@ -146,6 +146,21 @@ export function createNewSchema(nums: number[][]): SudokuSchema | null {
     links: [],
     superLinks: [],
   };
+}
+
+export function restartSchema(schema: SudokuSchema): SudokuSchema {
+  const cells = cloneCells(schema.cells);
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      if(cells[i][j].isGiven) {
+        cells[i][j] = {position: cells[i][j].position, digit: cells[i][j].digit, isGiven: true} 
+      } else {
+        cells[i][j] = {position: cells[i][j].position}
+      }
+    }
+  }
+  fillAllCandidatesInplace(cells);
+  return {...schema, cells};
 }
 
 export function fillAllCandidatesInplace(cells: Cell[][]) {
@@ -1778,5 +1793,44 @@ export function joinSelectedDigitInplace(cells: Cell[][], digit: Digit) {
         }
       } 
     }
+  }
+}
+
+export function setCandidatesColorCellInplace(cells: Cell[][], row: number, col: number, digit: Digit, color: CandidateColor) {
+  cells[row][col].cornerCandidates?.forEach((c) => {
+    if (c.digit === digit) {
+      c.color = color;
+    }
+  });
+}
+
+export function setCandidatesColorRowInplace(cells: Cell[][], row: number, digit: Digit, color: CandidateColor) {
+  for (let c = 0; c < 9; c++) {
+    cells[row][c].cornerCandidates?.forEach((c) => {
+      if (c.digit === digit) {
+        c.color = color;
+      }
+    })
+  }
+}
+
+export function setCandidatesColorColInplace(cells: Cell[][], col: number, digit: Digit, color: CandidateColor) {
+  for (let r = 0; r < 9; r++) {
+    cells[r][col].cornerCandidates?.forEach((c) => {
+      if (c.digit === digit) {
+        c.color = color;
+      }
+    })
+  }
+}
+
+export function setCandidatesColorBoxInplace(cells: Cell[][], box: number, digit: Digit, color: CandidateColor) {
+  const boxRange = getBoxRange(box);
+  for (const position of boxRange) {
+    cells[position.row][position.col].cornerCandidates?.forEach((c) => {
+      if (c.digit === digit) {
+        c.color = color;
+      }
+    })
   }
 }

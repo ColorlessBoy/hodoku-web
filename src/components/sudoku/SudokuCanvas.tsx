@@ -252,8 +252,6 @@ function drawCell(
     bgColor = colors.errorBg;
   } else if (cell.color) {
     bgColor = colors[getCellColorKey(cell.color)];
-  } else if (cell.isSelected) {
-    bgColor = colors.cellSelected;
   } else if (cell.isHighlighted) {
     bgColor = colors.cellHighlighted;
   }

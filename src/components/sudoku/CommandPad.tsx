@@ -61,7 +61,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     // 执行命令但忽略错误
     const result = executeCommand(schema, trimmed);
 
-    if (result.type === 'intermediate') {
+    if (result.type === 'intermediate' || result.type === 'ok') {
       return result.schema;
     }
 
@@ -204,7 +204,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     addHistory(input);
     setInput('');
     inputRef.current?.focus();
-  }, [input, schema, pushUndo, doUndo, doRedo, addHistory, setUndoStack, replaceSchema, onIntermediateSchema, errorMsg]);
+  }, [input, schema, pushUndo, doUndo, doRedo, addHistory, setUndoStack, replaceSchema, errorMsg]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
