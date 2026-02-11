@@ -61,6 +61,7 @@ const clampRC = (n: number): number => Math.max(1, Math.min(9, n));
 const toZeroIdx = (n: number): number => clampRC(n) - 1;
 
 const ok = (schema: SudokuSchema): CmdResult => ({ type: 'ok', schema });
+const intermediate = (schema: SudokuSchema, msg?: string): CmdResult => ({ type: 'intermediate', schema, msg });
 const err = (msg: string): CmdResult => ({ type: 'error', msg });
 const noop = (): CmdResult => ({ type: 'noop' });
 
@@ -130,11 +131,19 @@ const cmdSet: CmdHandler = (schema, args) => {
       return err('用法: set 115 327 781');
     }
     if (pos.col === undefined) {
+      // 中间状态：只选择行，需要更多输入
       setSelectRowInplace(newCells, pos.row);
-      break;
+      return intermediate(
+        { ...schema, cells: newCells },
+        `请选择行${pos.row + 1}中的列`
+      );
     } else if (!pos.digit) {
+      // 中间状态：只选择格子，需要更多输入
       setSelectCellInplace(newCells, pos.row, pos.col);
-      break;
+      return intermediate(
+        { ...schema, cells: newCells },
+        `请为格子(${pos.row + 1}, ${pos.col + 1})输入数字`
+      );
     } else {
       // Set digit in cell - using setCellInplace which handles conflict checking
       setCellInplace(newCells, pos.row, pos.col, pos.digit);
@@ -155,8 +164,12 @@ const cmdUnset: CmdHandler = (schema, args) => {
       return err('用法: c 11 32 78');
     }
     if (pos.col === undefined) {
+      // 中间状态：选择行，等待选择列
       setSelectRowInplace(newCells, pos.row);
-      break;
+      return intermediate(
+        { ...schema, cells: newCells },
+        `请选择行${pos.row + 1}中的格子清除`
+      );
     } else {
       unsetCellInplace(newCells, pos.row, pos.col);
     }

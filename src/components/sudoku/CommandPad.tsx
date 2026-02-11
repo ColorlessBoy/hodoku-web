@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { SudokuSchema } from '@/types/sudoku';
 import { cloneSchema } from '@/lib/schemaAdapter';
-import { executeCommands } from '@/lib/CmdEngine';
+import { executeCommands, executeCommand } from '@/lib/CmdEngine';
 import { cn } from '@/lib/utils';
 import { CommandHelp } from './CommandHelp';
 
@@ -14,6 +14,7 @@ preloadAllCommands();
 interface CommandPadProps {
   schema: SudokuSchema;
   replaceSchema: (next: SudokuSchema) => void;
+  onIntermediateSchema?: (schema: SudokuSchema | null) => void;
 }
 
 const useLocalStore = <T,>(key: string, initial: T) => {
@@ -38,14 +39,47 @@ const useLocalStore = <T,>(key: string, initial: T) => {
 export const CommandPad: React.FC<CommandPadProps> = ({
   schema,
   replaceSchema,
+  onIntermediateSchema,
 }) => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useLocalStore<string[]>('sudoku_cmd_history', []);
   const [historyIdx, setHistoryIdx] = useState<number>(-1);
   const [undoStack, setUndoStack] = useLocalStore<SudokuSchema[]>('sudoku_undo_stack', []);
   const [redoStack, setRedoStack] = useLocalStore<SudokuSchema[]>('sudoku_redo_stack', []);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // 解析输入并返回中间状态 schema（用于实时预览）
+  const parseIntermediateSchema = useCallback((inputValue: string): SudokuSchema | null => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return null;
+
+    // 只处理单个命令（不处理分号分隔的多命令）
+    if (trimmed.includes(';')) return null;
+
+    // 执行命令但忽略错误
+    const result = executeCommand(schema, trimmed);
+
+    if (result.type === 'intermediate') {
+      return result.schema;
+    }
+
+    return null;
+  }, [schema]);
+
+  // 输入变化时实时更新中间状态
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInput(newValue);
+
+    // 用户开始输入时清除错误消息
+    if (errorMsg) setErrorMsg(null);
+
+    // 实时解析中间状态
+    const intermediateSchema = parseIntermediateSchema(newValue);
+    onIntermediateSchema?.(intermediateSchema);
+  };
 
   useEffect(() => {
     const raw = localStorage.getItem('sudoku_last_schema');
@@ -144,20 +178,33 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     if (result.type === 'error') {
       // 执行失败，撤销 pushUndo
       setUndoStack((prev) => prev.slice(0, -1));
-      // 可以在这里显示错误消息
-      console.error('Command failed:', result.msg);
+      // 显示错误消息在 GUI 上
+      setErrorMsg(result.msg);
+      // 清除中间状态
+      onIntermediateSchema?.(null);
+    } else if (result.type === 'intermediate') {
+      // 中间状态 - 不更新主 schema，但显示叠加层
+      setUndoStack((prev) => prev.slice(0, -1)); // 撤销 pushUndo，因为命令未完成
+      onIntermediateSchema?.(result.schema);
+      if (result.msg) {
+        console.log('Intermediate:', result.msg);
+      }
     } else {
       if (trimmed === 'new') {
         cleanHistory();
       }
       // 执行成功，更新 schema
       replaceSchema(finalSchema);
+      // 清除中间状态（命令已完成）
+      onIntermediateSchema?.(null);
+      // 清除错误消息
+      setErrorMsg(null);
     }
 
     addHistory(input);
     setInput('');
     inputRef.current?.focus();
-  }, [input, schema, pushUndo, doUndo, doRedo, addHistory, setUndoStack, replaceSchema]);
+  }, [input, schema, pushUndo, doUndo, doRedo, addHistory, setUndoStack, replaceSchema, onIntermediateSchema, errorMsg]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -191,7 +238,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
         <input
           ref={inputRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={handleInputChange}
           onKeyDown={onKeyDown}
           placeholder="示例: s r1c1 5; k r1c1 3"
           className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -206,6 +253,12 @@ export const CommandPad: React.FC<CommandPadProps> = ({
           执行
         </button>
       </div>
+      {/* 错误消息显示 */}
+      {errorMsg && (
+        <div className="mb-3 px-3 py-2 rounded-md bg-destructive/10 border border-destructive text-destructive text-sm animate-in fade-in slide-in-from-top-1">
+          {errorMsg}
+        </div>
+      )}
       <div className="flex gap-2 mt-3">
         <button
           className={cn(

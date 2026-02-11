@@ -2,7 +2,7 @@ import React from 'react';
 import { SudokuGrid } from './SudokuGrid';
 import { CommandPad } from './CommandPad';
 import { useSudokuState } from '@/hooks/useSudokuState';
-import { CellPosition, Digit } from '@/types/sudoku';
+import { CellPosition, Digit, SudokuSchema } from '@/types/sudoku';
 
 export const SudokuApp: React.FC = () => {
   const {
@@ -20,6 +20,7 @@ export const SudokuApp: React.FC = () => {
 
   const [selectedCell, setSelectedCell] = React.useState<CellPosition | null>(null);
   const [mode, setMode] = React.useState<'normal' | 'corner'>('normal');
+  const [overlaySchema, setOverlaySchema] = React.useState<SudokuSchema | null>(null);
 
   const handleCellClick = (position: CellPosition) => {
     setSelectedCell(position);
@@ -51,6 +52,7 @@ export const SudokuApp: React.FC = () => {
             onCellClick={handleCellClick}
             onCandidateClick={(position, digit) => toggleCornerCandidate(position, digit)}
             size={Math.min(window.innerHeight - 64, window.innerWidth - 64)}
+            overlaySchema={overlaySchema}
           />
         </div>
 
@@ -59,6 +61,7 @@ export const SudokuApp: React.FC = () => {
           <CommandPad
             schema={schema}
             replaceSchema={replaceSchema}
+            onIntermediateSchema={setOverlaySchema}
           />
         </div>
       </div>

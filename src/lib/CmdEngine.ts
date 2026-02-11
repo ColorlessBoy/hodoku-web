@@ -29,6 +29,7 @@ initializeCommands();
 /** 命令执行结果 */
 export type CmdResult =
   | { type: 'ok'; schema: SudokuSchema }
+  | { type: 'intermediate'; schema: SudokuSchema; msg?: string } // 中间状态（如需要更多输入）
   | { type: 'error'; msg: string }
   | { type: 'noop' }; // 无操作（如 undo/redo 由外部处理）
 
@@ -215,6 +216,14 @@ export function executeCommands(
 
     if (lastResult.type === 'error') {
       break;
+    }
+
+    if (lastResult.type === 'intermediate') {
+      // 中间状态：返回该状态，不继续执行后续命令
+      return {
+        result: lastResult,
+        finalSchema: currentSchema,
+      };
     }
 
     if (lastResult.type === 'ok') {
