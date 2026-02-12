@@ -5,7 +5,7 @@
  */
 
 import type { SudokuSchema, Digit, CandidateColor } from '@/types/sudoku';
-import type { CmdResult, CmdHandler, CommandConfig } from './types';
+import type { CmdHandler, CommandConfig } from './types';
 import {
   cloneCells,
   setCandidatesColorCellInplace,
@@ -18,18 +18,7 @@ import {
   setSelectBoxInplace,
   joinSelectedDigitInplace,
 } from '../SudokuEngine';
-
-// ============================================================================
-// 工具函数
-// ============================================================================
-
-const clampRC = (n: number): number => Math.max(1, Math.min(9, n));
-const toZeroIdx = (n: number): number => clampRC(n) - 1;
-
-const ok = (schema: SudokuSchema): CmdResult => ({ type: 'ok', schema });
-const intermediate = (schema: SudokuSchema, msg?: string): CmdResult =>
-  ({ type: 'intermediate', schema, msg } as unknown as CmdResult);
-const err = (msg: string): CmdResult => ({ type: 'error', msg });
+import { ok, err, intermediate, clampRC, toZeroIdx } from './utils';
 
 /** 解析 115 格式的位置+数字 */
 function parsePosDigit(token: string): { row?: number; col?: number; digit?: Digit } | null {

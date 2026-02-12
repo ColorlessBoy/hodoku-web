@@ -15,12 +15,7 @@ import {
   setSelectColInplace,
   setSelectBoxInplace,
 } from '@/lib/SudokuEngine';
-
-const ok = (schema: SudokuSchema): CmdResult => ({ type: 'ok', schema });
-const err = (msg: string): CmdResult => ({ type: 'error', msg });
-
-const clampRC = (n: number): number => Math.max(1, Math.min(9, n));
-const toZeroIdx = (n: number): number => clampRC(n) - 1;
+import { ok, err, clampRC, toZeroIdx } from './utils';
 
 // ============================================================================
 // 命令处理器

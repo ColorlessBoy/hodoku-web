@@ -5,9 +5,8 @@
  */
 
 import type { SudokuSchema } from '@/types/sudoku';
-import type { CmdResult, CommandConfig } from './types';
-
-const noop = (): CmdResult => ({ type: 'noop' });
+import type { CommandConfig } from './types';
+import { noop } from './utils';
 
 export const historyCommands: CommandConfig = {
   undo: {

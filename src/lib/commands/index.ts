@@ -16,6 +16,37 @@ export type {
   CommandConfig,
 } from './types';
 
+// 工具函数导出
+export {
+  clampRC,
+  toZeroIdx,
+  toNumbers,
+  toZeroIndices,
+  ok,
+  err,
+  noop,
+  intermediate,
+} from './utils';
+
+// 解析器导出
+export {
+  parsePosDigit,
+  parsePos,
+  parseRowDigit,
+  parseColDigit,
+  parseBoxDigit,
+  parseNumbers,
+  parseZeroIndices,
+  parseDigits,
+} from './parsers';
+
+// 构建器导出
+export {
+  simpleHandler,
+  createBatchCommands,
+  createDigitCommands,
+} from './builders';
+
 // 注册中心导出
 export {
   register,
