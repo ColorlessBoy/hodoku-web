@@ -64,13 +64,21 @@
     --sudoku-color-7: 32 95% 85%;
     --sudoku-color-8: 330 81% 88%;
 
-    /* Candidate coloring */
-    --sudoku-candidate-color-1: 217 91% 50%;
-    --sudoku-candidate-color-2: 142 71% 45%;
-    --sudoku-candidate-color-3: 45 93% 50%;
-    --sudoku-candidate-color-4: 0 84% 55%;
-    --sudoku-candidate-color-5: 280 68% 55%;
-    --sudoku-candidate-color-6: 180 58% 45%;
+    /* Candidate coloring - 9 colors: 1 gray + 4 pairs of complementary colors */
+    /* Color 1: Gray (neutral, for general marking) */
+    --sudoku-candidate-color-1: 220 10% 55%;
+    /* Color 2-3: Red-Cyan (complementary, high contrast) */
+    --sudoku-candidate-color-2: 0 85% 50%;
+    --sudoku-candidate-color-3: 180 85% 45%;
+    /* Color 4-5: Orange-Blue (complementary, high contrast) */
+    --sudoku-candidate-color-4: 30 95% 50%;
+    --sudoku-candidate-color-5: 220 85% 55%;
+    /* Color 6-7: Yellow-Purple (complementary, high contrast) */
+    --sudoku-candidate-color-6: 55 95% 50%;
+    --sudoku-candidate-color-7: 280 75% 50%;
+    /* Color 8-9: Green-Magenta (complementary, high contrast) */
+    --sudoku-candidate-color-8: 140 80% 45%;
+    --sudoku-candidate-color-9: 320 85% 55%;
 
     /* Links */
     --sudoku-link-strong: 142 71% 45%;

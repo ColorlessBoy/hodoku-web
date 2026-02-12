@@ -63,6 +63,9 @@ const getColors = () => {
     candidate4: getCSSColor('--sudoku-candidate-color-4'),
     candidate5: getCSSColor('--sudoku-candidate-color-5'),
     candidate6: getCSSColor('--sudoku-candidate-color-6'),
+    candidate7: getCSSColor('--sudoku-candidate-color-7'),
+    candidate8: getCSSColor('--sudoku-candidate-color-8'),
+    candidate9: getCSSColor('--sudoku-candidate-color-9'),
     // Links
     linkStrong: getCSSColor('--sudoku-link-strong'),
     linkWeak: getCSSColor('--sudoku-link-weak'),
@@ -91,15 +94,18 @@ const getCellColorKey = (colorIndex: number): string => {
   return keys[colorIndex] || 'cellBg';
 };
 
-// 候选数颜色映射
+// 候选数颜色映射 - 9种颜色（1灰+4对互补色）
 const getCandidateColorKey = (colorIndex: number): string => {
   const keys: Record<number, string> = {
-    1: 'candidate1',
-    2: 'candidate2',
-    3: 'candidate3',
-    4: 'candidate4',
-    5: 'candidate5',
-    6: 'candidate6',
+    1: 'candidate1',  // Gray
+    2: 'candidate2',  // Red
+    3: 'candidate3',  // Cyan
+    4: 'candidate4',  // Orange
+    5: 'candidate5',  // Blue
+    6: 'candidate6',  // Yellow
+    7: 'candidate7',  // Purple
+    8: 'candidate8',  // Green
+    9: 'candidate9',  // Magenta
   };
   return keys[colorIndex] || 'muted';
 };

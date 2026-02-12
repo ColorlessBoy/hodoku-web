@@ -80,7 +80,7 @@ export const createBatchCommands = (
     [`${prefix}${targetType}a`]: {
       meta: {
         name: `${prefix}${targetType}a`,
-        aliases: [],
+        aliases: [`${prefix}${targetType[0]}a`],
         description: `添加${baseName}`,
         category: isSelect ? 'select' : 'highlight',
         args: [{ type: targetType, name: `${targetType}s`, description: `${d.s}号 1-9`, repeatable: true }],
@@ -95,7 +95,7 @@ export const createBatchCommands = (
     [`${prefix}${targetType}s`]: {
       meta: {
         name: `${prefix}${targetType}s`,
-        aliases: isSelect ? [`${prefix}${targetType}`] : [`${prefix}${targetType}`],
+        aliases: [`${prefix}${targetType[0]}s`, `${prefix}${targetType[0]}`],
         description: `设置${baseName}（替换现有）`,
         category: isSelect ? 'select' : 'highlight',
         args: [{ type: targetType, name: `${targetType}s`, description: `${d.s}号 1-9`, repeatable: true }],
@@ -110,7 +110,7 @@ export const createBatchCommands = (
     [`${prefix}${targetType}j`]: {
       meta: {
         name: `${prefix}${targetType}j`,
-        aliases: [],
+        aliases: [`${prefix}${targetType[0]}j`],
         description: `${baseName}取交集`,
         category: isSelect ? 'select' : 'highlight',
         args: [{ type: targetType, name: `${targetType}s`, description: `${d.s}号 1-9`, repeatable: true }],
