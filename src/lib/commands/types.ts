@@ -32,6 +32,7 @@ export type CommandCategory =
   | 'basic'
   | 'highlight'
   | 'select'
+  | 'color'
   | 'solve'
   | 'auto'
   | 'new'

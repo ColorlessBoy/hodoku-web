@@ -13,11 +13,13 @@ import { highlightCommands } from './highlightCommands';
 import { selectCommands } from './selectCommands';
 import { autoCommands } from './autoCommands';
 import { historyCommands } from './historyCommands';
+import { colorCommands } from "./colorCommands";
 
 // 命令类别映射
 const commandModules: Record<string, CommandConfig> = {
   basic: basicCommands,
   highlight: highlightCommands,
+  color: colorCommands,
   select: selectCommands,
   auto: autoCommands,
   history: historyCommands,
@@ -50,4 +52,4 @@ export function preloadAllCommands(): void {
 }
 
 // 导出所有命令配置，供需要直接使用的场景
-export { basicCommands, highlightCommands, selectCommands, autoCommands, historyCommands };
+export { basicCommands, highlightCommands, colorCommands, selectCommands, autoCommands, historyCommands };

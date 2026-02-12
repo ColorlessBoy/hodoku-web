@@ -23,6 +23,15 @@ const aliases = new Map<string, Set<string>>();
 // 注册
 // ============================================================================
 
+export function getCommandHandler(name: string): CmdHandler | undefined {
+  return handlers.get(name.toLowerCase());
+}
+
+export function getCommandMeta(name: string): CommandMeta | undefined {
+  return metas.get(name.toLowerCase());
+}
+
+
 /**
  * 注册单个命令
  * @param meta 命令元数据
@@ -119,6 +128,7 @@ export function getCategories(): { id: CommandCategory; name: string }[] {
     { id: 'basic', name: '基础操作' },
     { id: 'highlight', name: '高亮' },
     { id: 'select', name: '选择' },
+    { id: 'color', name: '染色' },
     { id: 'solve', name: '解题技巧' },
     { id: 'auto', name: '自动填充' },
     { id: 'new', name: '新题目' },

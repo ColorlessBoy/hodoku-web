@@ -12,15 +12,18 @@ import {
   getCommandHandler,
   hasCommand,
   getAllCommands,
-  getCommandsByCategory,
   getAllHelpText,
   generateHelpText,
   getCommandMeta,
-} from './CommandRegistry';
+} from '@/lib/commands';
 
-// 初始化命令定义
-import { initializeCommands } from './CommandDefinitions';
-initializeCommands();
+
+
+// 导入并注册所有命令
+import { preloadAllCommands } from '@/lib/commands';
+
+// 立即注册所有命令
+preloadAllCommands();
 
 // ============================================================================
 // 类型定义
@@ -35,9 +38,9 @@ export type CmdResult =
 
 /** 位置+数字解析结果 - 使用更安全的方式 */
 export interface PosDigit {
-  row: number;
-  col: number;
-  box: number;
+  row?: number;
+  col?: number;
+  box?: number;
   digit?: Digit;
 }
 
@@ -263,6 +266,3 @@ export function checkCommandExists(name: string): boolean {
 export function getAllHelp(): string {
   return getAllHelpText();
 }
-
-// 重新导出类型
-export type { CommandMeta, ArgDef, ArgType, CommandCategory } from './CommandRegistry';

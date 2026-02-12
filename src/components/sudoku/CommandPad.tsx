@@ -5,11 +5,6 @@ import { executeCommands, executeCommand } from '@/lib/CmdEngine';
 import { cn } from '@/lib/utils';
 import { CommandHelp } from './CommandHelp';
 
-// 导入并注册所有命令
-import { preloadAllCommands } from '@/lib/commands';
-
-// 立即注册所有命令
-preloadAllCommands();
 
 interface CommandPadProps {
   schema: SudokuSchema;

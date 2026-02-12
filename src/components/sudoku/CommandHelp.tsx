@@ -21,6 +21,7 @@ const categoryColors: Record<CommandCategory, string> = {
   basic: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
   highlight: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
   select: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+  color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
   solve: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
   auto: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
   new: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
@@ -31,6 +32,7 @@ const categoryNames: Record<CommandCategory, string> = {
   basic: '基础操作',
   highlight: '高亮',
   select: '选择',
+  color: '染色',
   solve: '解题技巧',
   auto: '自动填充',
   new: '新题目',
@@ -60,7 +62,7 @@ export const CommandHelp: React.FC<CommandHelpProps> = ({
         cmd.description.toLowerCase().includes(searchLower)
       );
     });
-
+    console.log('filtered', filtered);
     const grouped: Record<string, typeof allCommands> = {};
     for (const cmd of filtered) {
       if (!grouped[cmd.category]) {
@@ -68,6 +70,7 @@ export const CommandHelp: React.FC<CommandHelpProps> = ({
       }
       grouped[cmd.category].push(cmd);
     }
+    console.log('grouped', grouped);
     return grouped;
   }, [allCommands, searchTerm]);
 

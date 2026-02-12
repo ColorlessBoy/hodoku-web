@@ -29,6 +29,8 @@ export {
   getCategories,
   generateHelpText,
   getAllHelpText,
+  getCommandHandler,
+  getCommandMeta,
 } from './registry';
 
 // 加载器导出
@@ -37,6 +39,7 @@ export { loadCommands, preloadAllCommands } from './loader';
 // 具体命令配置导出（按需使用）
 export { basicCommands } from './basicCommands';
 export { highlightCommands } from './highlightCommands';
+export { colorCommands } from './colorCommands';
 export { selectCommands } from './selectCommands';
 export { autoCommands } from './autoCommands';
 export { historyCommands } from './historyCommands';
