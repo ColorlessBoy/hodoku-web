@@ -4,7 +4,7 @@
  * 提供统一的参数解析函数
  */
 
-import type { Digit } from '@/types/sudoku';
+import type { Digit } from '@/lib/sudoku';
 import { clampRC, toZeroIdx } from './utils';
 
 // ============================================================================

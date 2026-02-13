@@ -1,102 +1,162 @@
 /**
  * Basic Commands - 基础操作命令
+ *
+ * 使用类继承方式定义命令
  */
 
-import type { SudokuSchema, Digit } from '@/types/sudoku';
-import type { CmdResult, CommandConfig } from './types';
+import type { SudokuSchema } from '@/types/sudoku';
+import type { CmdResult, ArgDef } from './types';
 import {
   cloneCells,
   setCellInplace,
   unsetCellInplace,
   setSelectCellInplace,
   createNewSchema,
-} from '@/lib/SudokuEngine';
-import { ok, err, toZeroIdx, clampRC } from './utils';
+} from '@/lib/sudoku';
+import { ok, err } from './utils';
 import { parsePosDigit } from './parsers';
+import { BaseCommand } from './Command';
 
 // ============================================================================
-// 处理器
+// 参数定义复用
 // ============================================================================
 
-const cmdSet = (schema: SudokuSchema, args: string[]): CmdResult => {
-  if (args.length === 0) return err('用法: s 115 327 781');
-  const newCells = cloneCells(schema.cells);
-  for (const arg of args) {
-    const pos = parsePosDigit(arg);
-    if (!pos) return err('用法: set 115 327 781');
-    if (pos.digit === undefined) {
-      setSelectCellInplace(newCells, pos.row, pos.col);
-      break;
-    } else {
-      setCellInplace(newCells, pos.row, pos.col, pos.digit);
-    }
-  }
-  return ok({ ...schema, cells: newCells });
+const posArg: ArgDef = {
+  type: 'pos',
+  name: 'positions',
+  description: '位置+数字，如 115 表示行1列1设置值为5',
+  repeatable: true,
 };
 
-const cmdUnset = (schema: SudokuSchema, args: string[]): CmdResult => {
-  if (args.length === 0) return err('用法: unset 11 32 78');
-  const newCells = cloneCells(schema.cells);
-  for (const arg of args) {
-    const pos = parsePosDigit(arg);
-    if (!pos) return err('用法: c 11 32 78');
-    unsetCellInplace(newCells, pos.row, pos.col);
-  }
-  return ok({ ...schema, cells: newCells });
+const posArgNoDigit: ArgDef = {
+  type: 'pos',
+  name: 'positions',
+  description: '位置，如 11 表示行1列1',
+  repeatable: true,
 };
 
-const cmdNew = (_schema: SudokuSchema, args: string[]): CmdResult => {
-  if (args.length < 1 || args[0].length < 81) {
-    return err('用法: new 123456789... (81位数字)');
-  }
-  const nums: number[][] = [];
-  for (let i = 0; i < 9; i++) {
-    nums.push([]);
-    for (let j = 0; j < 9; j++) {
-      nums[i].push(Number(args[0][i * 9 + j]));
-    }
-  }
-  const newSchema = createNewSchema(nums);
-  if (!newSchema) return err('无效的数独数据');
-  return ok(newSchema);
+const puzzleArg: ArgDef = {
+  type: 'string',
+  name: 'puzzle',
+  description: '81位数字字符串，0表示空格',
 };
 
 // ============================================================================
-// 配置
+// 命令类定义
 // ============================================================================
 
-export const basicCommands: CommandConfig = {
-  set: {
-    meta: {
+class SetCommand extends BaseCommand {
+  constructor() {
+    super({
       name: 'set',
       aliases: ['s'],
-      description: '设置格子值（行+列+数字 格式）',
       category: 'basic',
-      args: [{ type: 'pos', name: 'positions', description: '位置+数字，如 115 表示行1列1设置值为5', repeatable: true }],
+      description: '设置格子值（行+列+数字 格式）',
+      args: [posArg],
       examples: ['set 115 326', 's 115 326'],
-    },
-    handler: cmdSet,
-  },
-  unset: {
-    meta: {
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const newCells = cloneCells(schema.cells);
+
+    for (const arg of args) {
+      const pos = parsePosDigit(arg);
+      if (!pos) return err('无效的参数格式');
+
+      if (pos.digit === undefined) {
+        setSelectCellInplace(newCells, pos.row, pos.col);
+        break;
+      } else {
+        setCellInplace(newCells, pos.row, pos.col, pos.digit);
+      }
+    }
+
+    return ok({ ...schema, cells: newCells });
+  }
+}
+
+class UnsetCommand extends BaseCommand {
+  constructor() {
+    super({
       name: 'unset',
       aliases: ['us', 'c'],
-      description: '清除格子值',
       category: 'basic',
-      args: [{ type: 'pos', name: 'positions', description: '位置，如 11 表示行1列1', repeatable: true }],
+      description: '清除格子值',
+      args: [posArgNoDigit],
       examples: ['unset 11 32', 'c 11 32'],
-    },
-    handler: cmdUnset,
-  },
-  new: {
-    meta: {
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const newCells = cloneCells(schema.cells);
+
+    for (const arg of args) {
+      const pos = parsePosDigit(arg);
+      if (!pos) return err('无效的参数格式');
+      unsetCellInplace(newCells, pos.row, pos.col);
+    }
+
+    return ok({ ...schema, cells: newCells });
+  }
+}
+
+class NewCommand extends BaseCommand {
+  constructor() {
+    super({
       name: 'new',
       aliases: [],
-      description: '导入新题目（81位数字）',
       category: 'new',
-      args: [{ type: 'string', name: 'puzzle', description: '81位数字字符串，0表示空格' }],
+      description: '导入新题目（81位数字）',
+      args: [puzzleArg],
       examples: ['new 530070000600195000098006800800060003400803001700020006060000280000419005000080079'],
-    },
-    handler: cmdNew,
+    });
+  }
+
+  execute(_schema: SudokuSchema, args: string[]): CmdResult {
+    if (args.length < 1 || args[0].length < 81) {
+      return err('无效的数独数据，需要81位数字');
+    }
+
+    const nums: number[][] = [];
+    for (let i = 0; i < 9; i++) {
+      nums.push([]);
+      for (let j = 0; j < 9; j++) {
+        nums[i].push(Number(args[0][i * 9 + j]));
+      }
+    }
+
+    const newSchema = createNewSchema(nums);
+    if (!newSchema) return err('无效的数独数据');
+
+    return ok(newSchema);
+  }
+}
+
+// ============================================================================
+// 自动收集并导出
+// ============================================================================
+
+// 实例化所有命令
+const setCommand = new SetCommand();
+const unsetCommand = new UnsetCommand();
+const newCommand = new NewCommand();
+
+// 导出命令实例（用于独立导入）
+export { setCommand, unsetCommand, newCommand, SetCommand, UnsetCommand, NewCommand };
+
+// 导出自动收集的命令配置
+export const basicCommands = {
+  [setCommand.name]: {
+    meta: setCommand.getMeta(),
+    handler: setCommand.handle.bind(setCommand),
+  },
+  [unsetCommand.name]: {
+    meta: unsetCommand.getMeta(),
+    handler: unsetCommand.handle.bind(unsetCommand),
+  },
+  [newCommand.name]: {
+    meta: newCommand.getMeta(),
+    handler: newCommand.handle.bind(newCommand),
   },
 };

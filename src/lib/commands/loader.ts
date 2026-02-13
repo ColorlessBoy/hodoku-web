@@ -11,7 +11,7 @@ import { registerCommands } from './registry';
 import { basicCommands } from './basicCommands';
 import { highlightCommands } from './highlightCommands';
 import { selectCommands } from './selectCommands';
-import { autoCommands } from './autoCommands';
+import { fillCommands } from './fillCommands';
 import { historyCommands } from './historyCommands';
 import { colorCommands } from "./colorCommands";
 
@@ -21,7 +21,7 @@ const commandModules: Record<string, CommandConfig> = {
   highlight: highlightCommands,
   color: colorCommands,
   select: selectCommands,
-  auto: autoCommands,
+  fill: fillCommands,
   history: historyCommands,
 };
 
@@ -52,4 +52,4 @@ export function preloadAllCommands(): void {
 }
 
 // 导出所有命令配置，供需要直接使用的场景
-export { basicCommands, highlightCommands, colorCommands, selectCommands, autoCommands, historyCommands };
+export { basicCommands, highlightCommands, colorCommands, selectCommands, fillCommands, historyCommands };

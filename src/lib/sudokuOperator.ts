@@ -2,8 +2,8 @@
  * 数独命令的"定理式"校验：只有合法的操作才允许执行。
  * 例如添加强/弱链时必须通过 checkWeakLink / checkStrongLink，否则拒绝并返回错误信息。
  */
-import { checkWeakLink, checkStrongLink, getCell } from '@/lib/SudokuEngine';
-import type { SudokuSchema, Link } from '@/lib/SudokuEngine';
+import { checkWeakLink, checkStrongLink, getCell } from '@/lib/sudoku';
+import type { SudokuSchema, Link } from '@/lib/sudoku';
 import type { CellPosition, Digit } from '@/types/sudoku';
 import { getBoxIndex } from '@/types/sudoku';
 

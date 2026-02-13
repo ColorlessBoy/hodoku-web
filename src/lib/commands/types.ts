@@ -4,7 +4,7 @@
  * 提供统一的命令类型接口，支持配置化注册
  */
 
-import type { SudokuSchema, Digit } from '@/types/sudoku';
+import type { SudokuSchema } from '@/lib/sudoku/types';
 
 /** 命令执行结果 */
 export type CmdResult =
@@ -16,7 +16,7 @@ export type CmdResult =
 export type CmdHandler = (schema: SudokuSchema, args: string[]) => CmdResult;
 
 /** 参数类型 */
-export type ArgType = 'pos' | 'digit' | 'row' | 'col' | 'box' | 'cells' | 'rows' | 'cols' | 'boxes' | 'string';
+export type ArgType = 'pos' | 'digit' | 'row' | 'col' | 'box' | 'cells' | 'rows' | 'cols' | 'boxes' | 'string' | 'poscolor' | 'numdigitcolor';
 
 /** 参数定义 */
 export interface ArgDef {
@@ -34,6 +34,7 @@ export type CommandCategory =
   | 'select'
   | 'color'
   | 'solve'
+  | 'fill'
   | 'auto'
   | 'new'
   | 'history';

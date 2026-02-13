@@ -7,7 +7,7 @@
  * 3. 集中化的命令定义和文档
  */
 
-import type { SudokuSchema, Digit } from '@/types/sudoku';
+import type { SudokuSchema, Digit } from '@/lib/sudoku';
 import {
   getCommandHandler,
   hasCommand,

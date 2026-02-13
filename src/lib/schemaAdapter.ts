@@ -9,8 +9,8 @@ import type {
   LinkEndpoint,
   Digit,
   Candidate,
-} from '@/lib/SudokuEngine';
-import { getBoxIndex } from '@/lib/SudokuEngine';
+} from '@/lib/sudoku';
+import { getBoxIndex } from '@/lib/sudoku';
 
 function withBox(pos: { row: number; col: number }): CellPosition {
   return {

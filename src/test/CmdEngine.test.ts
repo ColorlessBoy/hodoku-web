@@ -7,7 +7,7 @@ import {
   getAllHelp,
   parsePosDigit,
 } from '@/lib/CmdEngine';
-import { createNewSchema, type SudokuSchema } from '@/lib/SudokuEngine';
+import { createNewSchema, type SudokuSchema } from '@/lib/sudoku';
 
 // 创建一个标准的测试谜题（简单数独）
 const testPuzzle = [

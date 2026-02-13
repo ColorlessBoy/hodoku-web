@@ -7,7 +7,7 @@ import {
   fillCandidatesInplace,
   addCandidateInplace,
   checkConflict,
-  autofillUniqueCandidate,
+  autoFillUniqueCandidate,
   lastDigitRow,
   lastDigitCol,
   lastDigitBox,
@@ -19,7 +19,7 @@ import {
   addSelectedRows,
   clearAllSelected,
   type SudokuSchema,
-} from '@/lib/SudokuEngine';
+} from '@/lib/sudoku';
 import {
   getCommandList,
   checkCommandExists,

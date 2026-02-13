@@ -64,6 +64,14 @@ export {
   getCommandMeta,
 } from './registry';
 
+// 基类导出
+export {
+  BaseCommand,
+  CommandRegistry,
+  registerCommand,
+} from './Command';
+export type { CommandOptions } from './Command';
+
 // 加载器导出
 export { loadCommands, preloadAllCommands } from './loader';
 
@@ -72,5 +80,5 @@ export { basicCommands } from './basicCommands';
 export { highlightCommands } from './highlightCommands';
 export { colorCommands } from './colorCommands';
 export { selectCommands } from './selectCommands';
-export { autoCommands } from './autoCommands';
+export { fillCommands } from './fillCommands';
 export { historyCommands } from './historyCommands';
