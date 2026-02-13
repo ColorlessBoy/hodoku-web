@@ -2,7 +2,7 @@
  * Auto Commands - 自动填充相关命令
  */
 
-import type { SudokuSchema } from '@/types/sudoku';
+import type { Digit, SudokuSchema } from '@/types/sudoku';
 import type { CmdResult, CommandConfig } from './types';
 import {
   autofillUniqueCandidate,
@@ -21,7 +21,7 @@ import { ok, err, clampRC, toZeroIdx } from './utils';
 // 命令处理器
 // ============================================================================
 
-const cmdAutofuc = (schema: SudokuSchema): CmdResult => {
+const cmdAutofu = (schema: SudokuSchema): CmdResult => {
   const result = autofillUniqueCandidate(schema);
   if (result === schema) {
     return err('没有可自动填充的格子');
@@ -54,7 +54,7 @@ const cmdFur = (schema: SudokuSchema, args: string[]): CmdResult => {
     const t = arg.trim();
     if (t.length > 0) {
       const row = toZeroIdx(Number(t[0]));
-      const digit = t.length > 1 ? (clampRC(Number(t[1])) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) : undefined;
+      const digit = t.length > 1 ? (clampRC(Number(t[1])) as Digit) : undefined;
       if (digit !== undefined) {
         fillUniqueRowInplace(newCells, row, digit);
       } else {
@@ -74,7 +74,7 @@ const cmdFuc = (schema: SudokuSchema, args: string[]): CmdResult => {
     const t = arg.trim();
     if (t.length > 0) {
       const col = toZeroIdx(Number(t[0]));
-      const digit = t.length > 1 ? (clampRC(Number(t[1])) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) : undefined;
+      const digit = t.length > 1 ? (clampRC(Number(t[1])) as Digit) : undefined;
       if (digit !== undefined) {
         fillUniqueColInplace(newCells, col, digit);
       } else {
@@ -94,7 +94,7 @@ const cmdFub = (schema: SudokuSchema, args: string[]): CmdResult => {
     const t = arg.trim();
     if (t.length > 0) {
       const box = toZeroIdx(Number(t[0]));
-      const digit = t.length > 1 ? (clampRC(Number(t[1])) as 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9) : undefined;
+      const digit = t.length > 1 ? (clampRC(Number(t[1])) as Digit) : undefined;
       if (digit !== undefined) {
         fillUniqueBoxInplace(newCells, box, digit);
       } else {
@@ -110,21 +110,21 @@ const cmdFub = (schema: SudokuSchema, args: string[]): CmdResult => {
 // ============================================================================
 
 export const autoCommands: CommandConfig = {
-  autofuc: {
+  autofu: {
     meta: {
-      name: 'autofuc',
+      name: 'autofu',
       aliases: ['auto'],
       description: '自动填充所有唯一候选数',
       category: 'auto',
       args: [],
-      examples: ['autofuc', 'auto'],
+      examples: ['autofu', 'auto'],
     },
-    handler: cmdAutofuc,
+    handler: cmdAutofu,
   },
   fu: {
     meta: {
       name: 'fu',
-      aliases: ['fuc'],
+      aliases: [],
       description: '填充指定格子的唯一候选数',
       category: 'auto',
       args: [{ type: 'pos', name: 'positions', description: '位置如 11, 23', repeatable: true }],
@@ -143,14 +143,14 @@ export const autoCommands: CommandConfig = {
     },
     handler: cmdFur,
   },
-  fucol: {
+  fuc: {
     meta: {
-      name: 'fucol',
+      name: 'fuc',
       aliases: [],
       description: '填充列内唯一数',
       category: 'auto',
       args: [{ type: 'col', name: 'positions', description: '列+数字如 23 表示列2的3', repeatable: true }],
-      examples: ['fucol 23 15'],
+      examples: ['fuc 23 15'],
     },
     handler: cmdFuc,
   },

@@ -56,6 +56,8 @@ export interface Candidate {
   digit: Digit;
   color?: CandidateColor;
   hasConflict?: boolean;
+  isSelected?: boolean;
+  isHighlighted?: boolean;
 }
 
 export interface Cell {
@@ -891,6 +893,7 @@ export function subCandidate(schema: SudokuSchema, digit: Digit, row: number, co
   const checkTrue = (cell: Cell) => cell.cornerCandidates?.some((c) => c.digit === digit);
   const newTrue = (cell: Cell) => ({
     ...cell,
+    // 删除候选数时自动清理高亮和选择状态
     cornerCandidates: cell.cornerCandidates.filter((c) => c.digit !== digit),
   });
   return abstractAdd(schema, cond, checkTrue, newTrue);
