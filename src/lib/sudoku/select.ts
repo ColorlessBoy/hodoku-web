@@ -1,6 +1,7 @@
 import { getBoxCells, getBoxIndex, hasCandidate } from './basic';
 import { checkHighlighted } from './highlight';
 import type { Candidate, Cell, Digit } from './types';
+
 export function checkSelected(cell: Cell, selected: boolean): boolean {
   return cell.isSelected === selected || cell.candidates?.some((c) => c.isSelected === selected);
 }
@@ -27,10 +28,12 @@ export function setCellSelected(cell: Cell, selected: boolean = true, digit?: Di
     if (cell.isSelected !== selected) {
       cell.isSelected = selected;
     }
-    for (const c of cell.candidates) {
-      if (c.isSelected !== undefined) {
-        // 消去候选数的 Selected 状态
-        c.isSelected = undefined;
+    if (cell.candidates) {
+      for (const c of cell.candidates) {
+        if (c.isSelected !== undefined) {
+          // 消去候选数的 Selected 状态
+          c.isSelected = undefined;
+        }
       }
     }
   }

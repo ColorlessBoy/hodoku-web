@@ -19,27 +19,16 @@ class UndoCommand extends BaseCommand {
   constructor() {
     super({
       name: 'undo',
-      aliases: ['u'],
+      aliases: [],
       category: 'history',
       description: '撤销上一步操作',
       args: [],
-      examples: ['undo', 'u'],
+      examples: ['undo'],
     });
   }
 
   execute(): CmdResult {
-    // 实际撤销逻辑由外部处理
-    // 这里返回 noop 表示命令已接收，但实际操作由 HistoryManager 执行
-    return ok({
-      cells: [],
-      selectedCells: [],
-      highlightedRows: [],
-      highlightedCols: [],
-      highlightedBoxes: [],
-      highlightedDigits: [],
-      history: [],
-      historyIndex: -1,
-    } as any);
+    return this.error('没有实现撤销操作');
   }
 }
 
@@ -47,26 +36,17 @@ class RedoCommand extends BaseCommand {
   constructor() {
     super({
       name: 'redo',
-      aliases: ['r'],
+      aliases: [],
       category: 'history',
       description: '重做下一步操作',
       args: [],
-      examples: ['redo', 'r'],
+      examples: ['redo'],
     });
   }
 
   execute(): CmdResult {
     // 实际重做逻辑由外部处理
-    return ok({
-      cells: [],
-      selectedCells: [],
-      highlightedRows: [],
-      highlightedCols: [],
-      highlightedBoxes: [],
-      highlightedDigits: [],
-      history: [],
-      historyIndex: -1,
-    } as any);
+    return this.error('没有实现重做操作');
   }
 }
 
@@ -77,12 +57,7 @@ class RedoCommand extends BaseCommand {
 const undoCmd = new UndoCommand();
 const redoCmd = new RedoCommand();
 
-export {
-  undoCmd,
-  redoCmd,
-  UndoCommand,
-  RedoCommand,
-};
+export { undoCmd, redoCmd, UndoCommand, RedoCommand };
 
 export const historyCommands = {
   [undoCmd.name]: { meta: undoCmd.getMeta(), handler: undoCmd.handle.bind(undoCmd) },

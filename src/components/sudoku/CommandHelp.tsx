@@ -64,7 +64,6 @@ export const CommandHelp: React.FC<CommandHelpProps> = ({
         cmd.description.toLowerCase().includes(searchLower)
       );
     });
-    console.log('filtered', filtered);
     const grouped: Record<string, typeof allCommands> = {};
     for (const cmd of filtered) {
       if (!grouped[cmd.category]) {
@@ -72,7 +71,6 @@ export const CommandHelp: React.FC<CommandHelpProps> = ({
       }
       grouped[cmd.category].push(cmd);
     }
-    console.log('grouped', grouped);
     return grouped;
   }, [allCommands, searchTerm]);
 

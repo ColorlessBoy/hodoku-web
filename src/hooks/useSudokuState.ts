@@ -1,15 +1,5 @@
 import { useState, useCallback } from 'react';
-import {
-  SudokuSchema,
-  Cell,
-  CellPosition,
-  Digit,
-  CellColor,
-  CandidateColor,
-  Link,
-  getBoxIndex,
-  isInSameUnit,
-} from '@/types/sudoku';
+import { SudokuSchema, Cell, Position, Digit, Color, Link, getBoxIndex } from '@/lib/sudoku';
 
 // 创建空的 schema
 const createEmptySchema = (): SudokuSchema => ({
@@ -27,11 +17,7 @@ export const useSudokuState = () => {
 
   // 更新高亮状态
   const updateHighlights = useCallback(
-    (
-      cells: Cell[][],
-      selectedCell: CellPosition | null,
-      highlightedDigit: Digit | null
-    ): Cell[][] => {
+    (cells: Cell[][], selectedCell: Position | null, highlightedDigit: Digit | null): Cell[][] => {
       return cells.map((row, rowIndex) =>
         row.map((cell, colIndex): Cell => {
           const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
@@ -49,7 +35,7 @@ export const useSudokuState = () => {
 
   // 选择格子
   const selectCell = useCallback(
-    (position: CellPosition | null) => {
+    (position: Position | null) => {
       setSchema((prev) => {
         const newCells = updateHighlights(prev.cells, position, null);
         return {
@@ -63,7 +49,7 @@ export const useSudokuState = () => {
 
   // 设置格子的值
   const setCellValue = useCallback(
-    (position: CellPosition, value: Digit | null) => {
+    (position: Position, value: Digit | null) => {
       setSchema((prev) => {
         const cell = prev.cells[position.row][position.col];
         if (cell.isGiven) return prev;
@@ -74,7 +60,7 @@ export const useSudokuState = () => {
               return {
                 ...c,
                 digit: value ?? undefined,
-                cornerCandidates: value ? [] : c.cornerCandidates,
+                candidates: value ? [] : c.candidates,
               };
             }
             return c;
@@ -92,38 +78,14 @@ export const useSudokuState = () => {
     [updateHighlights]
   );
 
-  // 切换角注
-  const toggleCornerCandidate = useCallback((position: CellPosition, digit: Digit) => {
-    setSchema((prev) => {
-      const cell = prev.cells[position.row][position.col];
-      if (cell.isGiven || cell.digit) return prev;
-
-      const existing = (cell.cornerCandidates ?? []).find((cc) => cc.digit === digit);
-      const newCornerCandidates = existing
-        ? (cell.cornerCandidates ?? []).filter((cc) => cc.digit !== digit)
-        : [...(cell.cornerCandidates ?? []), { digit }].sort((a, b) => a.digit - b.digit);
-
-      const newCells = prev.cells.map((row, rowIndex) =>
-        row.map((c, colIndex) => {
-          if (rowIndex === position.row && colIndex === position.col) {
-            return { ...c, cornerCandidates: newCornerCandidates };
-          }
-          return c;
-        })
-      );
-
-      return { ...prev, cells: newCells };
-    });
-  }, []);
-
   // 切换中心候选数（SudokuEngine 不支持 centerCandidates，暂时保留但可能需要后续处理）
-  const toggleCenterCandidate = useCallback((position: CellPosition, digit: Digit) => {
-    // SudokuEngine 只支持 cornerCandidates，这里暂时不实现
+  const toggleCenterCandidate = useCallback((position: Position, digit: Digit) => {
+    // SudokuEngine 只支持 candidates，这里暂时不实现
     console.warn('toggleCenterCandidate not supported by SudokuEngine');
   }, []);
 
   // 设置单元格颜色
-  const setCellColor = useCallback((position: CellPosition, color: CellColor) => {
+  const setCellColor = useCallback((position: Position, color: Color) => {
     setSchema((prev) => {
       const newCells = prev.cells.map((row, rowIndex) =>
         row.map((c, colIndex) => {
@@ -139,7 +101,7 @@ export const useSudokuState = () => {
 
   // 设置候选数颜色
   const setCandidateColor = useCallback(
-    (position: CellPosition, digit: Digit, color: CandidateColor, isCorner: boolean) => {
+    (position: Position, digit: Digit, color: Color, isCorner: boolean) => {
       if (!isCorner) {
         console.warn('setCandidateColor for center candidates not supported by SudokuEngine');
         return;
@@ -148,10 +110,10 @@ export const useSudokuState = () => {
         const newCells = prev.cells.map((row, rowIndex) =>
           row.map((c, colIndex) => {
             if (rowIndex === position.row && colIndex === position.col) {
-              const newCornerCandidates = (c.cornerCandidates ?? []).map((cc) =>
+              const newcandidates = (c.candidates ?? []).map((cc) =>
                 cc.digit === digit ? { ...cc, color } : cc
               );
-              return { ...c, cornerCandidates: newCornerCandidates };
+              return { ...c, candidates: newcandidates };
             }
             return c;
           })
@@ -194,7 +156,7 @@ export const useSudokuState = () => {
 
   // 清除格子
   const clearCell = useCallback(
-    (position: CellPosition) => {
+    (position: Position) => {
       setSchema((prev) => {
         const cell = prev.cells[position.row][position.col];
         if (cell.isGiven) return prev;
@@ -205,7 +167,7 @@ export const useSudokuState = () => {
               return {
                 ...c,
                 digit: undefined,
-                cornerCandidates: [],
+                candidates: [],
                 color: undefined,
               };
             }
@@ -229,7 +191,6 @@ export const useSudokuState = () => {
     schema,
     selectCell,
     setCellValue,
-    toggleCornerCandidate,
     toggleCenterCandidate,
     setCellColor,
     setCandidateColor,

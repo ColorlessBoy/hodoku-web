@@ -18,7 +18,7 @@ import {
   setRowSelected,
   setXYHighlighted,
 } from '@/lib/sudoku';
-import { ok, toDigit, toRow, intermediate, toBox, toCol, toZeroIdx, toNumbers, toNumber } from './utils';
+import { ok, toDigit, toRow, intermediate, toBox, toCol } from './utils';
 import { BaseCommand } from './Command';
 import { cloneCells } from '../sudoku/basic';
 
@@ -33,14 +33,18 @@ class HighlightCellCmd extends BaseCommand {
       aliases: ['hce'],
       category: 'highlight',
       description: '高亮格子',
-      args: [{ type: 'pos', name: 'cells', description: '格子位置（如 11, 23）', repeatable: true }],
+      args: [
+        { type: 'pos', name: 'cells', description: '格子位置（如 11, 23）', repeatable: true },
+      ],
       examples: ['hcell 11 23'],
     });
   }
 
   execute(schema: SudokuSchema, args: string[]): CmdResult {
     let changed = false;
+    console.log('highlightCell', args);
     const cells = cloneCells(schema.cells);
+    console.log('highlightCell clonecells');
     for (const arg of args) {
       if (arg.length === 0) {
         return this.error();
@@ -153,13 +157,18 @@ class HighlightDigitCmd extends BaseCommand {
       aliases: ['h', 'hd'],
       category: 'highlight',
       description: '高亮数字',
-      args: [{ type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true }],
+      args: [
+        { type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true },
+      ],
       examples: ['hdigit 1 2 3'],
     });
   }
   execute(schema: SudokuSchema, args: string[]): CmdResult {
     let changed = false;
     const cells = cloneCells(schema.cells);
+    if (cleanAllCellsHighlighted(cells)) {
+      changed = true;
+    }
     for (const arg of args) {
       const digit = toDigit(arg);
       if (setDigitHighlighted(cells, digit)) {
@@ -218,7 +227,6 @@ class UnHighlightCmd extends BaseCommand {
     return this.error('没有高亮被清除');
   }
 }
-
 
 class JoinHighlightRowCmd extends BaseCommand {
   constructor() {
@@ -309,7 +317,9 @@ class JoinHighlightDigitCmd extends BaseCommand {
       aliases: ['hj'],
       category: 'highlight',
       description: '合并高亮数字',
-      args: [{ type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true }],
+      args: [
+        { type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true },
+      ],
       examples: ['hdj 1 2 3', 'hj 1 2 3'],
     });
   }
@@ -393,8 +403,6 @@ const joinHighlightDigitCmd = new JoinHighlightDigitCmd();
 const joinHighlightXYCmd = new JoinHighlightXYCmd();
 const highlightSelectedCmd = new HighlightSelectedCmd();
 
-
-
 export {
   highlightCellCmd,
   highlightRowCmd,
@@ -412,17 +420,56 @@ export {
 };
 
 export const highlightCommands = {
-  [highlightCellCmd.name]: { meta: highlightCellCmd.getMeta(), handler: highlightCellCmd.handle.bind(highlightCellCmd) },
-  [highlightRowCmd.name]: { meta: highlightRowCmd.getMeta(), handler: highlightRowCmd.handle.bind(highlightRowCmd) },
-  [highlightColCmd.name]: { meta: highlightColCmd.getMeta(), handler: highlightColCmd.handle.bind(highlightColCmd) },
-  [highlightBoxCmd.name]: { meta: highlightBoxCmd.getMeta(), handler: highlightBoxCmd.handle.bind(highlightBoxCmd) },
-  [highlightDigitCmd.name]: { meta: highlightDigitCmd.getMeta(), handler: highlightDigitCmd.handle.bind(highlightDigitCmd) },
-  [highlightXYCmd.name]: { meta: highlightXYCmd.getMeta(), handler: highlightXYCmd.handle.bind(highlightXYCmd) },
-  [unHighlightCmd.name]: { meta: unHighlightCmd.getMeta(), handler: unHighlightCmd.handle.bind(unHighlightCmd) },
-  [joinHighlightRowCmd.name]: { meta: joinHighlightRowCmd.getMeta(), handler: joinHighlightRowCmd.handle.bind(joinHighlightRowCmd) },
-  [joinHighlightColCmd.name]: { meta: joinHighlightColCmd.getMeta(), handler: joinHighlightColCmd.handle.bind(joinHighlightColCmd) },
-  [joinHighlightBoxCmd.name]: { meta: joinHighlightBoxCmd.getMeta(), handler: joinHighlightBoxCmd.handle.bind(joinHighlightBoxCmd) },
-  [joinHighlightDigitCmd.name]: { meta: joinHighlightDigitCmd.getMeta(), handler: joinHighlightDigitCmd.handle.bind(joinHighlightDigitCmd) },
-  [joinHighlightXYCmd.name]: { meta: joinHighlightXYCmd.getMeta(), handler: joinHighlightXYCmd.handle.bind(joinHighlightXYCmd) },
-  [highlightSelectedCmd.name]: { meta: highlightSelectedCmd.getMeta(), handler: highlightSelectedCmd.handle.bind(highlightSelectedCmd) },
+  [highlightCellCmd.name]: {
+    meta: highlightCellCmd.getMeta(),
+    handler: highlightCellCmd.handle.bind(highlightCellCmd),
+  },
+  [highlightRowCmd.name]: {
+    meta: highlightRowCmd.getMeta(),
+    handler: highlightRowCmd.handle.bind(highlightRowCmd),
+  },
+  [highlightColCmd.name]: {
+    meta: highlightColCmd.getMeta(),
+    handler: highlightColCmd.handle.bind(highlightColCmd),
+  },
+  [highlightBoxCmd.name]: {
+    meta: highlightBoxCmd.getMeta(),
+    handler: highlightBoxCmd.handle.bind(highlightBoxCmd),
+  },
+  [highlightDigitCmd.name]: {
+    meta: highlightDigitCmd.getMeta(),
+    handler: highlightDigitCmd.handle.bind(highlightDigitCmd),
+  },
+  [highlightXYCmd.name]: {
+    meta: highlightXYCmd.getMeta(),
+    handler: highlightXYCmd.handle.bind(highlightXYCmd),
+  },
+  [unHighlightCmd.name]: {
+    meta: unHighlightCmd.getMeta(),
+    handler: unHighlightCmd.handle.bind(unHighlightCmd),
+  },
+  [joinHighlightRowCmd.name]: {
+    meta: joinHighlightRowCmd.getMeta(),
+    handler: joinHighlightRowCmd.handle.bind(joinHighlightRowCmd),
+  },
+  [joinHighlightColCmd.name]: {
+    meta: joinHighlightColCmd.getMeta(),
+    handler: joinHighlightColCmd.handle.bind(joinHighlightColCmd),
+  },
+  [joinHighlightBoxCmd.name]: {
+    meta: joinHighlightBoxCmd.getMeta(),
+    handler: joinHighlightBoxCmd.handle.bind(joinHighlightBoxCmd),
+  },
+  [joinHighlightDigitCmd.name]: {
+    meta: joinHighlightDigitCmd.getMeta(),
+    handler: joinHighlightDigitCmd.handle.bind(joinHighlightDigitCmd),
+  },
+  [joinHighlightXYCmd.name]: {
+    meta: joinHighlightXYCmd.getMeta(),
+    handler: joinHighlightXYCmd.handle.bind(joinHighlightXYCmd),
+  },
+  [highlightSelectedCmd.name]: {
+    meta: highlightSelectedCmd.getMeta(),
+    handler: highlightSelectedCmd.handle.bind(highlightSelectedCmd),
+  },
 };

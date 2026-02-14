@@ -16,7 +16,20 @@ export type CmdResult =
 export type CmdHandler = (schema: SudokuSchema, args: string[]) => CmdResult;
 
 /** 参数类型 */
-export type ArgType = 'pos' | 'digit' | 'row' | 'col' | 'box' | 'cells' | 'rows' | 'cols' | 'boxes' | 'string' | 'poscolor' | 'numdigitcolor';
+export type ArgType =
+  | 'pos'
+  | 'digit'
+  | 'row'
+  | 'col'
+  | 'box'
+  | 'cells'
+  | 'rows'
+  | 'cols'
+  | 'boxes'
+  | 'string'
+  | 'numdigit'
+  | 'poscolor'
+  | 'numdigitcolor';
 
 /** 参数定义 */
 export interface ArgDef {

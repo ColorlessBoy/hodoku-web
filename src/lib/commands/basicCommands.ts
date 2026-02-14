@@ -4,17 +4,10 @@
  * 使用类继承方式定义命令
  */
 
-import type { SudokuSchema } from '@/types/sudoku';
+import type { SudokuSchema } from '@/lib/sudoku';
 import type { CmdResult, ArgDef } from './types';
-import {
-  cloneCells,
-  setCellInplace,
-  unsetCellInplace,
-  setSelectCellInplace,
-  createNewSchema,
-} from '@/lib/sudoku';
+import { createNewSchema } from '@/lib/sudoku';
 import { ok, err } from './utils';
-import { parsePosDigit } from './parsers';
 import { BaseCommand } from './Command';
 
 // ============================================================================
@@ -45,62 +38,6 @@ const puzzleArg: ArgDef = {
 // 命令类定义
 // ============================================================================
 
-class SetCommand extends BaseCommand {
-  constructor() {
-    super({
-      name: 'set',
-      aliases: ['s'],
-      category: 'basic',
-      description: '设置格子值（行+列+数字 格式）',
-      args: [posArg],
-      examples: ['set 115 326', 's 115 326'],
-    });
-  }
-
-  execute(schema: SudokuSchema, args: string[]): CmdResult {
-    const newCells = cloneCells(schema.cells);
-
-    for (const arg of args) {
-      const pos = parsePosDigit(arg);
-      if (!pos) return err('无效的参数格式');
-
-      if (pos.digit === undefined) {
-        setSelectCellInplace(newCells, pos.row, pos.col);
-        break;
-      } else {
-        setCellInplace(newCells, pos.row, pos.col, pos.digit);
-      }
-    }
-
-    return ok({ ...schema, cells: newCells });
-  }
-}
-
-class UnsetCommand extends BaseCommand {
-  constructor() {
-    super({
-      name: 'unset',
-      aliases: ['us', 'c'],
-      category: 'basic',
-      description: '清除格子值',
-      args: [posArgNoDigit],
-      examples: ['unset 11 32', 'c 11 32'],
-    });
-  }
-
-  execute(schema: SudokuSchema, args: string[]): CmdResult {
-    const newCells = cloneCells(schema.cells);
-
-    for (const arg of args) {
-      const pos = parsePosDigit(arg);
-      if (!pos) return err('无效的参数格式');
-      unsetCellInplace(newCells, pos.row, pos.col);
-    }
-
-    return ok({ ...schema, cells: newCells });
-  }
-}
-
 class NewCommand extends BaseCommand {
   constructor() {
     super({
@@ -109,7 +46,9 @@ class NewCommand extends BaseCommand {
       category: 'new',
       description: '导入新题目（81位数字）',
       args: [puzzleArg],
-      examples: ['new 530070000600195000098006800800060003400803001700020006060000280000419005000080079'],
+      examples: [
+        'new 530070000600195000098006800800060003400803001700020006060000280000419005000080079',
+      ],
     });
   }
 
@@ -138,23 +77,13 @@ class NewCommand extends BaseCommand {
 // ============================================================================
 
 // 实例化所有命令
-const setCommand = new SetCommand();
-const unsetCommand = new UnsetCommand();
 const newCommand = new NewCommand();
 
 // 导出命令实例（用于独立导入）
-export { setCommand, unsetCommand, newCommand, SetCommand, UnsetCommand, NewCommand };
+export { newCommand };
 
 // 导出自动收集的命令配置
 export const basicCommands = {
-  [setCommand.name]: {
-    meta: setCommand.getMeta(),
-    handler: setCommand.handle.bind(setCommand),
-  },
-  [unsetCommand.name]: {
-    meta: unsetCommand.getMeta(),
-    handler: unsetCommand.handle.bind(unsetCommand),
-  },
   [newCommand.name]: {
     meta: newCommand.getMeta(),
     handler: newCommand.handle.bind(newCommand),

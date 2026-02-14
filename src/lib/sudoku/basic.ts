@@ -180,7 +180,7 @@ export function setCell(cells: Cell[][], row: number, col: number, digit: Digit)
       cells[row][col].hasConflict = true;
       hasConflict = true;
     } else if (cell.candidates) {
-      cell.candidates = cell.candidates.filter((c) => c.digit !== digit);
+      cell.candidates = cell.candidates?.filter((c) => c.digit !== digit);
     }
   }
   cells[row][col].candidates = null;
@@ -193,6 +193,6 @@ export function removeCandidate(cells: Cell[][], row: number, col: number, digit
   if (!cells[row][col].candidates || !hasCandidate(cells[row][col], digit)) {
     return false;
   }
-  cells[row][col].candidates = cells[row][col].candidates.filter((c) => c.digit !== digit);
+  cells[row][col].candidates = cells[row][col].candidates?.filter((c) => c.digit !== digit);
   return true;
 }

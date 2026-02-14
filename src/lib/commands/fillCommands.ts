@@ -52,7 +52,9 @@ class FillLastDigitInRowCommand extends BaseCommand {
       aliases: ['fr'],
       category: 'fill',
       description: '填充行最后数',
-      args: [{ type: 'pos', name: 'rowdigit', description: '行+数字（如 12, 32）', repeatable: true }],
+      args: [
+        { type: 'pos', name: 'rowdigit', description: '行+数字（如 12, 32）', repeatable: true },
+      ],
       examples: ['fr 12', 'fr 32 32'],
     });
   }
@@ -89,7 +91,14 @@ class FillLastDigitInColCommand extends BaseCommand {
       aliases: ['fc'],
       category: 'fill',
       description: '填充列最后数',
-      args: [{ type: 'pos', name: 'coldigit', description: '列+数字（如 12, 32）', repeatable: true }],
+      args: [
+        {
+          type: 'numdigit',
+          name: 'coldigit',
+          description: '列+数字（如 12, 32）',
+          repeatable: true,
+        },
+      ],
       examples: ['fc 12', 'fc 32 32'],
     });
   }
@@ -125,7 +134,9 @@ class FillLastDigitInBoxCommand extends BaseCommand {
       aliases: ['fb'],
       category: 'fill',
       description: '填充框最后数',
-      args: [{ type: 'pos', name: 'boxdigit', description: '框+数字（如 12, 32）', repeatable: true }],
+      args: [
+        { type: 'pos', name: 'boxdigit', description: '框+数字（如 12, 32）', repeatable: true },
+      ],
       examples: ['fb 12', 'fb 32 32'],
     });
   }
@@ -164,7 +175,6 @@ const fillLastDigitInRowCmd = new FillLastDigitInRowCommand();
 const fillLastDigitInColCmd = new FillLastDigitInColCommand();
 const fillLastDigitInBoxCmd = new FillLastDigitInBoxCommand();
 
-
 export {
   fillUniqueCandidateAutoCmd,
   fillLastDigitInRowCmd,
@@ -173,8 +183,20 @@ export {
 };
 
 export const fillCommands = {
-  [fillUniqueCandidateAutoCmd.name]: { meta: fillUniqueCandidateAutoCmd.getMeta(), handler: fillUniqueCandidateAutoCmd.handle.bind(fillUniqueCandidateAutoCmd) },
-  [fillLastDigitInRowCmd.name]: { meta: fillLastDigitInRowCmd.getMeta(), handler: fillLastDigitInRowCmd.handle.bind(fillLastDigitInRowCmd) },
-  [fillLastDigitInColCmd.name]: { meta: fillLastDigitInColCmd.getMeta(), handler: fillLastDigitInColCmd.handle.bind(fillLastDigitInColCmd) },
-  [fillLastDigitInBoxCmd.name]: { meta: fillLastDigitInBoxCmd.getMeta(), handler: fillLastDigitInBoxCmd.handle.bind(fillLastDigitInBoxCmd) },
+  [fillUniqueCandidateAutoCmd.name]: {
+    meta: fillUniqueCandidateAutoCmd.getMeta(),
+    handler: fillUniqueCandidateAutoCmd.handle.bind(fillUniqueCandidateAutoCmd),
+  },
+  [fillLastDigitInRowCmd.name]: {
+    meta: fillLastDigitInRowCmd.getMeta(),
+    handler: fillLastDigitInRowCmd.handle.bind(fillLastDigitInRowCmd),
+  },
+  [fillLastDigitInColCmd.name]: {
+    meta: fillLastDigitInColCmd.getMeta(),
+    handler: fillLastDigitInColCmd.handle.bind(fillLastDigitInColCmd),
+  },
+  [fillLastDigitInBoxCmd.name]: {
+    meta: fillLastDigitInBoxCmd.getMeta(),
+    handler: fillLastDigitInBoxCmd.handle.bind(fillLastDigitInBoxCmd),
+  },
 };

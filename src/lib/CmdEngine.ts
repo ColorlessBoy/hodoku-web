@@ -171,7 +171,7 @@ export function executeCommand(schema: SudokuSchema, command: string): CmdResult
   if (!s) return err('空命令');
 
   const parts = s.split(/\s+/);
-  const cmd = isNumber(parts[0]) ? 'hds' : parts[0].toLowerCase(); // 默认高亮数字
+  const cmd = isNumber(parts[0]) ? 'hd' : parts[0].toLowerCase(); // 默认高亮数字
   const args = isNumber(parts[0]) ? parts.slice(0, 1) : parts.slice(1);
 
   // 帮助命令

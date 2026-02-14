@@ -13,6 +13,9 @@ function setCandidateColor(candidate: Candidate, color?: Color): boolean {
 }
 
 export function setCellCandidateColor(cell: Cell, digit: Digit, color?: Color): boolean {
+  if (!cell.candidates) {
+    return false;
+  }
   let changed = false;
   for (const candidate of cell.candidates) {
     if (candidate.digit === digit && setCandidateColor(candidate, color)) {

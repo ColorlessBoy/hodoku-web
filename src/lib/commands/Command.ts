@@ -9,13 +9,7 @@
  */
 
 import type { SudokuSchema } from '@/lib/sudoku/types';
-import type {
-  CmdResult,
-  CommandMeta,
-  CommandCategory,
-  ArgDef,
-  CmdHandler,
-} from './types';
+import type { CmdResult, CommandMeta, CommandCategory, ArgDef, CmdHandler } from './types';
 import { err } from './utils';
 import { register } from './registry';
 

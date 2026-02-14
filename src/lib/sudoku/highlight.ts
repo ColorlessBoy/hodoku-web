@@ -12,6 +12,9 @@ function setCandidatesHighlighted(
   highlighted: boolean = true,
   digit?: Digit
 ): boolean {
+  if (!candidates) {
+    return false;
+  }
   let changed = false;
   for (const c of candidates) {
     if (c.digit === digit && c.isSelected !== highlighted) {

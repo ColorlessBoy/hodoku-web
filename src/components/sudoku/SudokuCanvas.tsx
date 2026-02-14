@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
-import { SudokuSchema, Position, Digit, Candidate, Cell, getBoxIndex } from '@/lib/sudoku';
+import { SudokuSchema, Position, Digit, Candidate, Cell, getBoxIndex, Link } from '@/lib/sudoku';
 
 interface SudokuCanvasProps {
   schema: SudokuSchema;
@@ -129,47 +129,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
   const actualCellSize = actualSize / 9;
 
   // 处理点击
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLCanvasElement>) => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left - padding;
-      const y = e.clientY - rect.top - padding;
-
-      const col = Math.floor(x / actualCellSize);
-      const row = Math.floor(y / actualCellSize);
-
-      if (row >= 0 && row < 9 && col >= 0 && col < 9) {
-        // 检查是否点击了候选数
-        if (onCandidateClick) {
-          const cell = schema.cells[row][col];
-          if (!cell.digit && cell.candidates.length > 0) {
-            const cellX = col * actualCellSize;
-            const cellY = row * actualCellSize;
-            const localX = x - cellX;
-            const localY = y - cellY;
-
-            // 检查九宫格位置
-            const gridCol = Math.floor((localX / actualCellSize) * 3);
-            const gridRow = Math.floor((localY / actualCellSize) * 3);
-            const clickedDigit = (gridRow * 3 + gridCol + 1) as Digit;
-
-            // 检查该候选数是否存在
-            const candidate = cell.candidates.find((c) => c.digit === clickedDigit);
-            if (candidate) {
-              onCandidateClick({ row, col, box: getBoxIndex(row, col) }, clickedDigit);
-              return;
-            }
-          }
-        }
-
-        onCellClick({ row, col, box: getBoxIndex(row, col) });
-      }
-    },
-    [actualCellSize, onCellClick, onCandidateClick, schema.cells, padding]
-  );
+  const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {}, []);
 
   // 渲染函数
   useEffect(() => {
@@ -394,7 +354,7 @@ function drawGridLines(
 // 绘制链条
 function drawLinks(
   ctx: CanvasRenderingContext2D,
-  links: import('@/lib/sudoku').Link[],
+  links: Link[],
   cellSize: number,
   colors: Record<string, string>,
   offset: number = 0
@@ -439,7 +399,7 @@ function drawLinks(
     ctx.fill();
   };
 
-  links.forEach((link) => {
+  links?.forEach((link) => {
     const from = getCandidatePosition(
       link.from.position.row,
       link.from.position.col,
