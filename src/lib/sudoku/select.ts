@@ -2,15 +2,36 @@ import { getBoxCells, getBoxIndex, hasCandidate } from './basic';
 import { checkHighlighted } from './highlight';
 import type { Candidate, Cell, Digit } from './types';
 
-export function checkSelected(cell: Cell, selected: boolean): boolean {
-  return cell.isSelected === selected || cell.candidates?.some((c) => c.isSelected === selected);
+export function checkSelected(cell: Cell, selected: boolean = true): boolean {
+  let isTrue = false;
+  if (cell.isSelected === true) {
+    isTrue = true;
+  }
+  if (cell.candidates !== undefined) {
+    for (const c of cell.candidates) {
+      if (c.isSelected === true) {
+        isTrue = true;
+      }
+    }
+  }
+  if (isTrue === true) {
+    return selected;
+  }
+  return !selected;
 }
 
 // 1. 设置候选数字的选中状态：setCandidatesSelected(candidates, true, digit)
 // 2. 设置候选数字的不选中状态：setCandidatesSelected(candidates, false, digit)
 // 3. 设置所有候选数字的选中状态：setCandidatesSelected(candidates, true)
 // 4. 设置所有候选数字的不选中状态：setCandidatesSelected(candidates, false)
-function setCandidatesSelected(candidates: Candidate[], selected: boolean, digit?: Digit): boolean {
+function setCandidatesSelected(
+  candidates: Candidate[] | undefined,
+  selected: boolean,
+  digit?: Digit
+): boolean {
+  if (candidates === undefined) {
+    return false;
+  }
   let changed = false;
   for (const c of candidates) {
     if (c.digit === digit && c.isSelected !== selected) {

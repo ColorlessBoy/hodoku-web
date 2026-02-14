@@ -1,5 +1,15 @@
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
-import { SudokuSchema, Position, Digit, Candidate, Cell, getBoxIndex, Link } from '@/lib/sudoku';
+import {
+  SudokuSchema,
+  Position,
+  Digit,
+  Candidate,
+  Cell,
+  getBoxIndex,
+  Link,
+  checkHighlighted,
+  checkSelected,
+} from '@/lib/sudoku';
 
 interface SudokuCanvasProps {
   schema: SudokuSchema;
@@ -211,7 +221,7 @@ function drawCell(
     bgColor = colors.errorBg;
   } else if (cell.color) {
     bgColor = colors[getCellColorKey(cell.color)];
-  } else if (cell.isHighlighted) {
+  } else if (checkHighlighted(cell)) {
     bgColor = colors.cellHighlighted;
   }
 
@@ -219,7 +229,7 @@ function drawCell(
   ctx.fillStyle = bgColor;
   ctx.fillRect(x, y, cellSize, cellSize);
 
-  if (cell.isSelected) {
+  if (checkSelected(cell)) {
     // 加粗边框
     ctx.lineWidth = 4;
     ctx.strokeStyle = colors.selectedCellBorder;
