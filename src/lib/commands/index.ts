@@ -15,18 +15,8 @@ export type {
   CommandDefinition,
   CommandConfig,
 } from './types';
-
 // 工具函数导出
-export {
-  clampRC,
-  toZeroIdx,
-  toNumbers,
-  toZeroIndices,
-  ok,
-  err,
-  noop,
-  intermediate,
-} from './utils';
+export { clampRC, toZeroIdx, toNumbers, toZeroIndices, ok, err, noop, intermediate } from './utils';
 
 // 解析器导出
 export {
@@ -39,13 +29,6 @@ export {
   parseZeroIndices,
   parseDigits,
 } from './parsers';
-
-// 构建器导出
-export {
-  simpleHandler,
-  createBatchCommands,
-  createDigitCommands,
-} from './builders';
 
 // 注册中心导出
 export {
@@ -65,11 +48,7 @@ export {
 } from './registry';
 
 // 基类导出
-export {
-  BaseCommand,
-  CommandRegistry,
-  registerCommand,
-} from './Command';
+export { BaseCommand, CommandRegistry, registerCommand } from './Command';
 export type { CommandOptions } from './Command';
 
 // 加载器导出

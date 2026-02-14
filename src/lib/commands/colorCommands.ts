@@ -14,6 +14,7 @@ import {
   setCellSelected,
   setColCandidateColor,
   setColSelected,
+  setDigitSelected,
   setRowCandidateColor,
   setRowSelected,
 } from '@/lib/sudoku';
@@ -32,11 +33,17 @@ class ColorCellCandidateCmd extends BaseCommand {
       aliases: ['c'],
       category: 'color',
       description: '设置格子候选数颜色',
-      args: [{ type: 'poscolor', name: 'poscolor', description: '格子位置（如 23） + 候选数（如 1） + 颜色（如 3）', repeatable: true }],
+      args: [
+        {
+          type: 'poscolor',
+          name: 'poscolor',
+          description: '格子位置（如 23） + 候选数（如 1） + 颜色（如 3）',
+          repeatable: true,
+        },
+      ],
       examples: ['c 2313'],
     });
   }
-
   execute(schema: SudokuSchema, args: string[]): CmdResult {
     let changed = false;
     const cells = cloneCells(schema.cells);
@@ -77,7 +84,14 @@ class ColorRowCandidateCmd extends BaseCommand {
       aliases: ['cr'],
       category: 'color',
       description: '选择行内某个候选数染色',
-      args: [{ type: 'numdigitcolor', name: 'rowdigitcolor', description: '行位置（如 1, 2, 3）+数字+颜色（如 3）', repeatable: true }],
+      args: [
+        {
+          type: 'numdigitcolor',
+          name: 'rowdigitcolor',
+          description: '行位置（如 1, 2, 3）+数字+颜色（如 3）',
+          repeatable: true,
+        },
+      ],
       examples: ['cr 123'],
     });
   }
@@ -115,7 +129,14 @@ class ColorColCandidateCmd extends BaseCommand {
       aliases: ['cc'],
       category: 'color',
       description: '选择列内某个候选数染色',
-      args: [{ type: 'numdigitcolor', name: 'coldigitcolor', description: '列位置（如 1, 2, 3）+数字+颜色（如 3）', repeatable: true }],
+      args: [
+        {
+          type: 'numdigitcolor',
+          name: 'coldigitcolor',
+          description: '列位置（如 1, 2, 3）+数字+颜色（如 3）',
+          repeatable: true,
+        },
+      ],
       examples: ['cc 123'],
     });
   }
@@ -153,7 +174,14 @@ class ColorBoxCandidateCmd extends BaseCommand {
       aliases: ['cb'],
       category: 'color',
       description: '选择宫内某个候选数染色',
-      args: [{ type: 'numdigitcolor', name: 'boxdigitcolor', description: '宫位置（如 1, 2, 3）+数字+颜色（如 3）', repeatable: true }],
+      args: [
+        {
+          type: 'numdigitcolor',
+          name: 'boxdigitcolor',
+          description: '宫位置（如 1, 2, 3）+数字+颜色（如 3）',
+          repeatable: true,
+        },
+      ],
       examples: ['cbox 123'],
     });
   }
@@ -170,7 +198,10 @@ class ColorBoxCandidateCmd extends BaseCommand {
       }
       const digit = toDigit(arg[1]);
       if (arg.length === 2) {
-        setBoxCandidateColor(cells, box, digit, 1 as Color);
+        cleanAllCellsSelected(cells);
+        setBoxSelected(cells, box);
+        setDigitSelected(cells, digit, true, true);
+        return intermediate({ ...schema, cells });
       }
       const color = toColor0(arg[2]);
       if (setBoxCandidateColor(cells, box, digit, color)) {
@@ -193,17 +224,23 @@ const colorRowCmd = new ColorRowCandidateCmd();
 const colorColCmd = new ColorColCandidateCmd();
 const colorBoxCmd = new ColorBoxCandidateCmd();
 
-
-export {
-  colorCellCmd,
-  colorRowCmd,
-  colorColCmd,
-  colorBoxCmd,
-};
+export { colorCellCmd, colorRowCmd, colorColCmd, colorBoxCmd };
 
 export const colorCommands = {
-  [colorCellCmd.name]: { meta: colorCellCmd.getMeta(), handler: colorCellCmd.handle.bind(colorCellCmd) },
-  [colorRowCmd.name]: { meta: colorRowCmd.getMeta(), handler: colorRowCmd.handle.bind(colorRowCmd) },
-  [colorColCmd.name]: { meta: colorColCmd.getMeta(), handler: colorColCmd.handle.bind(colorColCmd) },
-  [colorBoxCmd.name]: { meta: colorBoxCmd.getMeta(), handler: colorBoxCmd.handle.bind(colorBoxCmd) },
+  [colorCellCmd.name]: {
+    meta: colorCellCmd.getMeta(),
+    handler: colorCellCmd.handle.bind(colorCellCmd),
+  },
+  [colorRowCmd.name]: {
+    meta: colorRowCmd.getMeta(),
+    handler: colorRowCmd.handle.bind(colorRowCmd),
+  },
+  [colorColCmd.name]: {
+    meta: colorColCmd.getMeta(),
+    handler: colorColCmd.handle.bind(colorColCmd),
+  },
+  [colorBoxCmd.name]: {
+    meta: colorBoxCmd.getMeta(),
+    handler: colorBoxCmd.handle.bind(colorBoxCmd),
+  },
 };

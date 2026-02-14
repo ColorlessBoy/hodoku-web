@@ -31,7 +31,6 @@ export function getCommandMeta(name: string): CommandMeta | undefined {
   return metas.get(name.toLowerCase());
 }
 
-
 /**
  * 注册单个命令
  * @param meta 命令元数据
@@ -107,9 +106,7 @@ export function getAllCommandNames(): string[] {
  * 获取所有命令元数据
  */
 export function getAllCommands(): CommandMeta[] {
-  return Array.from(metas.values()).sort((a, b) =>
-    a.name.localeCompare(b.name)
-  );
+  return Array.from(metas.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**

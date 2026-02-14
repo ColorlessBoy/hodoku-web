@@ -15,17 +15,23 @@ export const useSudokuState = () => {
     return initial;
   });
 
-  // 更新高亮状态
-  const updateHighlights = useCallback(
+  // 辅助函数：确保创建新对象并更新高亮状态
+  const updateCellsWithHighlights = useCallback(
     (cells: Cell[][], selectedCell: Position | null, highlightedDigit: Digit | null): Cell[][] => {
       return cells.map((row, rowIndex) =>
         row.map((cell, colIndex): Cell => {
           const isSelected = selectedCell?.row === rowIndex && selectedCell?.col === colIndex;
+          const isHighlighted = highlightedDigit ? cell.digit === highlightedDigit : false;
+
+          // 只有当选中状态改变时才创建新对象
+          if (cell.isSelected === isSelected && cell.isHighlighted === isHighlighted) {
+            return cell;
+          }
 
           return {
             ...cell,
             isSelected,
-            isHighlighted: highlightedDigit ? cell.digit === highlightedDigit : false,
+            isHighlighted,
           };
         })
       );
@@ -37,14 +43,14 @@ export const useSudokuState = () => {
   const selectCell = useCallback(
     (position: Position | null) => {
       setSchema((prev) => {
-        const newCells = updateHighlights(prev.cells, position, null);
+        const newCells = updateCellsWithHighlights(prev.cells, position, null);
         return {
           ...prev,
           cells: newCells,
         };
       });
     },
-    [updateHighlights]
+    [updateCellsWithHighlights]
   );
 
   // 设置格子的值
@@ -67,7 +73,7 @@ export const useSudokuState = () => {
           })
         );
 
-        const cellsWithHighlights = updateHighlights(newCells, null, null);
+        const cellsWithHighlights = updateCellsWithHighlights(newCells, null, null);
 
         return {
           ...prev,
@@ -75,7 +81,7 @@ export const useSudokuState = () => {
         };
       });
     },
-    [updateHighlights]
+    [updateCellsWithHighlights]
   );
 
   // 切换中心候选数（SudokuEngine 不支持 centerCandidates，暂时保留但可能需要后续处理）
@@ -85,19 +91,29 @@ export const useSudokuState = () => {
   }, []);
 
   // 设置单元格颜色
-  const setCellColor = useCallback((position: Position, color: Color) => {
-    setSchema((prev) => {
-      const newCells = prev.cells.map((row, rowIndex) =>
-        row.map((c, colIndex) => {
-          if (rowIndex === position.row && colIndex === position.col) {
-            return { ...c, color };
-          }
-          return c;
-        })
-      );
-      return { ...prev, cells: newCells };
-    });
-  }, []);
+  const setCellColor = useCallback(
+    (position: Position, color: Color) => {
+      setSchema((prev) => {
+        let changed = false;
+        const newCells = prev.cells.map((row, rowIndex) =>
+          row.map((c, colIndex) => {
+            if (rowIndex === position.row && colIndex === position.col) {
+              if (c.color !== color) changed = true;
+              return { ...c, color };
+            }
+            return c;
+          })
+        );
+
+        if (!changed) return prev;
+
+        const cellsWithHighlights = updateCellsWithHighlights(newCells, null, null);
+
+        return { ...prev, cells: cellsWithHighlights };
+      });
+    },
+    [updateCellsWithHighlights]
+  );
 
   // 设置候选数颜色
   const setCandidateColor = useCallback(
@@ -118,24 +134,27 @@ export const useSudokuState = () => {
             return c;
           })
         );
-        return { ...prev, cells: newCells };
+
+        const cellsWithHighlights = updateCellsWithHighlights(newCells, null, null);
+
+        return { ...prev, cells: cellsWithHighlights };
       });
     },
-    []
+    [updateCellsWithHighlights]
   );
 
   // 设置高亮数字
   const setHighlightedDigit = useCallback(
     (digit: Digit | null) => {
       setSchema((prev) => {
-        const newCells = updateHighlights(prev.cells, null, digit);
+        const newCells = updateCellsWithHighlights(prev.cells, null, digit);
         return {
           ...prev,
           cells: newCells,
         };
       });
     },
-    [updateHighlights]
+    [updateCellsWithHighlights]
   );
 
   // 添加链
@@ -175,12 +194,12 @@ export const useSudokuState = () => {
           })
         );
 
-        const cellsWithHighlights = updateHighlights(newCells, null, null);
+        const cellsWithHighlights = updateCellsWithHighlights(newCells, null, null);
 
         return { ...prev, cells: cellsWithHighlights };
       });
     },
-    [updateHighlights]
+    [updateCellsWithHighlights]
   );
 
   const replaceSchema = useCallback((next: SudokuSchema) => {

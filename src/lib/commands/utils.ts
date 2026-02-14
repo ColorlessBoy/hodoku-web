@@ -12,7 +12,7 @@ import type { CmdResult } from './types';
 // ============================================================================
 
 /** 将 1-9 的数字限制在有效范围内 */
-export const clampRC = (n: number): number => Math.max(1, Math.min(9, (n % 10)));
+export const clampRC = (n: number): number => Math.max(1, Math.min(9, n % 10));
 
 /** 将 1-9 转换为 0-8 的索引 */
 export const toZeroIdx = (n: number): number => clampRC(n) - 1;
@@ -29,11 +29,18 @@ export const toRow = (arg: string): number => toZeroIndice(arg);
 export const toCol = toRow;
 export const toBox = toRow;
 export const toDigit = (arg: string): Digit => clampRC(Number(arg)) as Digit;
-export const toZeroIndices = (args: string[]): number[] => args.map((arg) => toZeroIdx(Number(arg)));
-export const toRow0 = (arg: string): number => { if (arg.length > 0 && toNumber(arg[0]) === 0) return -1; return toZeroIndice(arg) };
+export const toZeroIndices = (args: string[]): number[] =>
+  args.map((arg) => toZeroIdx(Number(arg)));
+export const toRow0 = (arg: string): number => {
+  if (arg.length > 0 && toNumber(arg[0]) === 0) return -1;
+  return toZeroIndice(arg);
+};
 export const toCol0 = toRow0;
 export const toBox0 = toRow0;
-export const toColor0 = (arg: string): Color | undefined => { if (arg.length > 0 && toNumber(arg[0]) === 0) return undefined; return clampRC(Number(arg)) as Color };
+export const toColor0 = (arg: string): Color | undefined => {
+  if (arg.length > 0 && toNumber(arg[0]) === 0) return undefined;
+  return clampRC(Number(arg)) as Color;
+};
 
 // ============================================================================
 // 结果构造器
@@ -50,7 +57,7 @@ export const noop = (): CmdResult => ({ type: 'noop' });
 
 /** 创建中间状态结果 */
 export const intermediate = (schema: SudokuSchema, msg?: string): CmdResult =>
-  ({ type: 'intermediate', schema, msg } as unknown as CmdResult);
+  ({ type: 'intermediate', schema, msg }) as unknown as CmdResult;
 
 // ============================================================================
 // 参数验证

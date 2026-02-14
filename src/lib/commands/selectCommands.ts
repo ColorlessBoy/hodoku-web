@@ -31,7 +31,9 @@ class SelectCellCmd extends BaseCommand {
       aliases: ['s'],
       category: 'select',
       description: '选择格子',
-      args: [{ type: 'pos', name: 'cells', description: '格子位置（如 11, 23）', repeatable: true }],
+      args: [
+        { type: 'pos', name: 'cells', description: '格子位置（如 11, 23）', repeatable: true },
+      ],
       examples: ['select 11 23'],
     });
   }
@@ -151,7 +153,9 @@ class SelectDigitCmd extends BaseCommand {
       aliases: ['sd', 's'],
       category: 'select',
       description: '选择数字',
-      args: [{ type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true }],
+      args: [
+        { type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true },
+      ],
       examples: ['sdigit 1 2 3'],
     });
   }
@@ -216,7 +220,6 @@ class UnSelectCmd extends BaseCommand {
     return this.error('没有选择被清除');
   }
 }
-
 
 class JoinSelectRowCmd extends BaseCommand {
   constructor() {
@@ -307,7 +310,9 @@ class JoinSelectDigitCmd extends BaseCommand {
       aliases: ['sj'],
       category: 'select',
       description: '合并选择数字',
-      args: [{ type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true }],
+      args: [
+        { type: 'digit', name: 'digits', description: '数字（如 1, 2, 3）', repeatable: true },
+      ],
       examples: ['sjd 1 2 3', 'sj 1 2 3'],
     });
   }
@@ -391,8 +396,6 @@ const joinSelectDigitCmd = new JoinSelectDigitCmd();
 const joinSelectXYCmd = new JoinSelectXYCmd();
 const selectHighlightedCmd = new SelectHighlightedCmd();
 
-
-
 export {
   selectCellCmd,
   selectRowCmd,
@@ -410,17 +413,56 @@ export {
 };
 
 export const selectCommands = {
-  [selectCellCmd.name]: { meta: selectCellCmd.getMeta(), handler: selectCellCmd.handle.bind(selectCellCmd) },
-  [selectRowCmd.name]: { meta: selectRowCmd.getMeta(), handler: selectRowCmd.handle.bind(selectRowCmd) },
-  [selectColCmd.name]: { meta: selectColCmd.getMeta(), handler: selectColCmd.handle.bind(selectColCmd) },
-  [selectBoxCmd.name]: { meta: selectBoxCmd.getMeta(), handler: selectBoxCmd.handle.bind(selectBoxCmd) },
-  [selectDigitCmd.name]: { meta: selectDigitCmd.getMeta(), handler: selectDigitCmd.handle.bind(selectDigitCmd) },
-  [selectXYCmd.name]: { meta: selectXYCmd.getMeta(), handler: selectXYCmd.handle.bind(selectXYCmd) },
-  [unSelectCmd.name]: { meta: unSelectCmd.getMeta(), handler: unSelectCmd.handle.bind(unSelectCmd) },
-  [joinSelectRowCmd.name]: { meta: joinSelectRowCmd.getMeta(), handler: joinSelectRowCmd.handle.bind(joinSelectRowCmd) },
-  [joinSelectColCmd.name]: { meta: joinSelectColCmd.getMeta(), handler: joinSelectColCmd.handle.bind(joinSelectColCmd) },
-  [joinSelectBoxCmd.name]: { meta: joinSelectBoxCmd.getMeta(), handler: joinSelectBoxCmd.handle.bind(joinSelectBoxCmd) },
-  [joinSelectDigitCmd.name]: { meta: joinSelectDigitCmd.getMeta(), handler: joinSelectDigitCmd.handle.bind(joinSelectDigitCmd) },
-  [joinSelectXYCmd.name]: { meta: joinSelectXYCmd.getMeta(), handler: joinSelectXYCmd.handle.bind(joinSelectXYCmd) },
-  [selectHighlightedCmd.name]: { meta: selectHighlightedCmd.getMeta(), handler: selectHighlightedCmd.handle.bind(selectHighlightedCmd) },
+  [selectCellCmd.name]: {
+    meta: selectCellCmd.getMeta(),
+    handler: selectCellCmd.handle.bind(selectCellCmd),
+  },
+  [selectRowCmd.name]: {
+    meta: selectRowCmd.getMeta(),
+    handler: selectRowCmd.handle.bind(selectRowCmd),
+  },
+  [selectColCmd.name]: {
+    meta: selectColCmd.getMeta(),
+    handler: selectColCmd.handle.bind(selectColCmd),
+  },
+  [selectBoxCmd.name]: {
+    meta: selectBoxCmd.getMeta(),
+    handler: selectBoxCmd.handle.bind(selectBoxCmd),
+  },
+  [selectDigitCmd.name]: {
+    meta: selectDigitCmd.getMeta(),
+    handler: selectDigitCmd.handle.bind(selectDigitCmd),
+  },
+  [selectXYCmd.name]: {
+    meta: selectXYCmd.getMeta(),
+    handler: selectXYCmd.handle.bind(selectXYCmd),
+  },
+  [unSelectCmd.name]: {
+    meta: unSelectCmd.getMeta(),
+    handler: unSelectCmd.handle.bind(unSelectCmd),
+  },
+  [joinSelectRowCmd.name]: {
+    meta: joinSelectRowCmd.getMeta(),
+    handler: joinSelectRowCmd.handle.bind(joinSelectRowCmd),
+  },
+  [joinSelectColCmd.name]: {
+    meta: joinSelectColCmd.getMeta(),
+    handler: joinSelectColCmd.handle.bind(joinSelectColCmd),
+  },
+  [joinSelectBoxCmd.name]: {
+    meta: joinSelectBoxCmd.getMeta(),
+    handler: joinSelectBoxCmd.handle.bind(joinSelectBoxCmd),
+  },
+  [joinSelectDigitCmd.name]: {
+    meta: joinSelectDigitCmd.getMeta(),
+    handler: joinSelectDigitCmd.handle.bind(joinSelectDigitCmd),
+  },
+  [joinSelectXYCmd.name]: {
+    meta: joinSelectXYCmd.getMeta(),
+    handler: joinSelectXYCmd.handle.bind(joinSelectXYCmd),
+  },
+  [selectHighlightedCmd.name]: {
+    meta: selectHighlightedCmd.getMeta(),
+    handler: selectHighlightedCmd.handle.bind(selectHighlightedCmd),
+  },
 };

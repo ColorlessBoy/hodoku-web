@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { cloneSchema, type SudokuSchema } from '@/lib/sudoku';
 import { executeCommands, executeCommand } from '@/lib/CmdEngine';
 import { cn } from '@/lib/utils';
@@ -154,13 +154,13 @@ export const CommandPad: React.FC<CommandPadProps> = ({
 
     // 检查是否为 undo/redo 命令
     const trimmed = input.trim().toLowerCase();
-    if (trimmed === 'u' || trimmed === 'undo') {
+    if (trimmed === 'undo') {
       doUndo();
       addHistory(input);
       setInput('');
       return;
     }
-    if (trimmed === 'r' || trimmed === 'redo') {
+    if (trimmed === 'redo') {
       doRedo();
       addHistory(input);
       setInput('');
