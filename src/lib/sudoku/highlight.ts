@@ -1,12 +1,17 @@
-import { getBoxCells, getBoxIndex, hasCandidate } from "./basic";
-import { checkSelected } from "./select";
-import type { Candidate, Cell, Digit } from "./types";
+import { getBoxCells, getBoxIndex, hasCandidate } from './basic';
+import { checkSelected } from './select';
+import type { Candidate, Cell, Digit } from './types';
 
 export function checkHighlighted(cell: Cell, highlighted: boolean = true): boolean {
-  return cell.isSelected === highlighted || cell.candidates?.some((c) => c.isSelected === highlighted);
+  return (
+    cell.isSelected === highlighted || cell.candidates?.some((c) => c.isSelected === highlighted)
+  );
 }
-
-function setCandidatesHighlighted(candidates: Candidate[], highlighted: boolean = true, digit?: Digit): boolean {
+function setCandidatesHighlighted(
+  candidates: Candidate[],
+  highlighted: boolean = true,
+  digit?: Digit
+): boolean {
   let changed = false;
   for (const c of candidates) {
     if (c.digit === digit && c.isSelected !== highlighted) {
@@ -17,9 +22,12 @@ function setCandidatesHighlighted(candidates: Candidate[], highlighted: boolean 
   return changed;
 }
 
-
-export function setCellHighlighted(cell: Cell, highlighted: boolean = true, digit?: Digit): boolean {
-  let changed = checkHighlighted(cell, highlighted);
+export function setCellHighlighted(
+  cell: Cell,
+  highlighted: boolean = true,
+  digit?: Digit
+): boolean {
+  const changed = checkHighlighted(cell, highlighted);
   if (digit === undefined) {
     // 只针对单元格的设置
     if (cell.isSelected !== highlighted) {
@@ -41,7 +49,7 @@ export function setCellHighlighted(cell: Cell, highlighted: boolean = true, digi
   } else {
     if (hasCandidate(cell, digit)) {
       // 针对命中的候选数的格子
-      setCandidatesHighlighted(cell.candidates, highlighted, digit)
+      setCandidatesHighlighted(cell.candidates, highlighted, digit);
       if (cell.isSelected !== undefined) {
         // 候选数设置了 Selected 后，消去 Cell 的 Selected 状态
         cell.isSelected = undefined;
@@ -72,8 +80,12 @@ export function cleanAllCellsHighlighted(cells: Cell[][]): boolean {
   return setAllCellsHighlighted(cells, false);
 }
 
-
-export function setDigitHighlighted(cells: Cell[][], digit: Digit, highlighted: boolean = true, isJoin: boolean = false): boolean {
+export function setDigitHighlighted(
+  cells: Cell[][],
+  digit: Digit,
+  highlighted: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -100,7 +112,12 @@ export function setDigitHighlighted(cells: Cell[][], digit: Digit, highlighted: 
   return changed;
 }
 
-export function setRowHighlighted(cells: Cell[][], row: number, highlighted: boolean = true, isJoin: boolean = false): boolean {
+export function setRowHighlighted(
+  cells: Cell[][],
+  row: number,
+  highlighted: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -124,7 +141,12 @@ export function setRowHighlighted(cells: Cell[][], row: number, highlighted: boo
   return changed;
 }
 
-export function setColHighlighted(cells: Cell[][], col: number, highlighted: boolean = true, isJoin: boolean = false): boolean {
+export function setColHighlighted(
+  cells: Cell[][],
+  col: number,
+  highlighted: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -148,7 +170,12 @@ export function setColHighlighted(cells: Cell[][], col: number, highlighted: boo
   return changed;
 }
 
-export function setBoxHighlighted(cells: Cell[][], box: number, highlighted: boolean = true, isJoin: boolean = false): boolean {
+export function setBoxHighlighted(
+  cells: Cell[][],
+  box: number,
+  highlighted: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -171,7 +198,11 @@ export function setBoxHighlighted(cells: Cell[][], box: number, highlighted: boo
   return changed;
 }
 
-export function setXYHighlighted(cells: Cell[][], highlighted: boolean = true, isJoin: boolean = false): boolean {
+export function setXYHighlighted(
+  cells: Cell[][],
+  highlighted: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置

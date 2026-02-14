@@ -1,7 +1,6 @@
-import { getBoxCells, getBoxIndex, hasCandidate } from "./basic";
-import { checkHighlighted } from "./highlight";
-import type { Candidate, Cell, Digit } from "./types";
-
+import { getBoxCells, getBoxIndex, hasCandidate } from './basic';
+import { checkHighlighted } from './highlight';
+import type { Candidate, Cell, Digit } from './types';
 export function checkSelected(cell: Cell, selected: boolean): boolean {
   return cell.isSelected === selected || cell.candidates?.some((c) => c.isSelected === selected);
 }
@@ -21,9 +20,8 @@ function setCandidatesSelected(candidates: Candidate[], selected: boolean, digit
   return changed;
 }
 
-
 export function setCellSelected(cell: Cell, selected: boolean = true, digit?: Digit): boolean {
-  let changed = checkSelected(cell, selected);
+  const changed = checkSelected(cell, selected);
   if (digit === undefined) {
     // 只针对单元格的设置
     if (cell.isSelected !== selected) {
@@ -45,7 +43,7 @@ export function setCellSelected(cell: Cell, selected: boolean = true, digit?: Di
   } else {
     if (hasCandidate(cell, digit)) {
       // 针对命中的候选数的格子
-      setCandidatesSelected(cell.candidates, selected, digit)
+      setCandidatesSelected(cell.candidates, selected, digit);
       if (cell.isSelected !== undefined) {
         // 候选数设置了 Selected 后，消去 Cell 的 Selected 状态
         cell.isSelected = undefined;
@@ -76,8 +74,12 @@ export function cleanAllCellsSelected(cells: Cell[][]): boolean {
   return setAllCellsSelected(cells, false);
 }
 
-
-export function setDigitSelected(cells: Cell[][], digit: Digit, selected: boolean = true, isJoin: boolean = false): boolean {
+export function setDigitSelected(
+  cells: Cell[][],
+  digit: Digit,
+  selected: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -104,7 +106,12 @@ export function setDigitSelected(cells: Cell[][], digit: Digit, selected: boolea
   return changed;
 }
 
-export function setRowSelected(cells: Cell[][], row: number, selected: boolean = true, isJoin: boolean = false): boolean {
+export function setRowSelected(
+  cells: Cell[][],
+  row: number,
+  selected: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -128,7 +135,12 @@ export function setRowSelected(cells: Cell[][], row: number, selected: boolean =
   return changed;
 }
 
-export function setColSelected(cells: Cell[][], col: number, selected: boolean = true, isJoin: boolean = false): boolean {
+export function setColSelected(
+  cells: Cell[][],
+  col: number,
+  selected: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -152,7 +164,12 @@ export function setColSelected(cells: Cell[][], col: number, selected: boolean =
   return changed;
 }
 
-export function setBoxSelected(cells: Cell[][], box: number, selected: boolean = true, isJoin: boolean = false): boolean {
+export function setBoxSelected(
+  cells: Cell[][],
+  box: number,
+  selected: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
@@ -175,7 +192,11 @@ export function setBoxSelected(cells: Cell[][], box: number, selected: boolean =
   return changed;
 }
 
-export function setXYSelected(cells: Cell[][], selected: boolean = true, isJoin: boolean = false): boolean {
+export function setXYSelected(
+  cells: Cell[][],
+  selected: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置

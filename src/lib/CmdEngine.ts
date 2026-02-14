@@ -17,8 +17,6 @@ import {
   getCommandMeta,
 } from '@/lib/commands';
 
-
-
 // 导入并注册所有命令
 import { preloadAllCommands } from '@/lib/commands';
 
@@ -71,7 +69,7 @@ const noop = (): CmdResult => ({ type: 'noop' });
 // 位置解析（更安全的实现）
 // ============================================================================
 
-import { getBoxIndex } from '@/types/sudoku';
+import { getBoxIndex } from '@/lib/sudoku';
 
 /** 解析 115 格式的位置+数字 - 使用更安全的返回值 */
 export function parsePosDigit(token: string): PosDigit | null {

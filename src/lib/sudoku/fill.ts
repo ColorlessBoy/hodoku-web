@@ -1,6 +1,5 @@
-
-import type { Digit, Cell } from "./types";
-import { getBoxCells, hasCandidate, setCell } from "./basic";
+import type { Digit, Cell } from './types';
+import { getBoxCells, hasCandidate, setCell } from './basic';
 export function fillUniqueCandidateAuto(cells: Cell[][]): boolean {
   let changed = false;
   for (let i = 0; i < 81; i++) {

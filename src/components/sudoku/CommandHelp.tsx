@@ -23,6 +23,7 @@ const categoryColors: Record<CommandCategory, string> = {
   select: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
   color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
   solve: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+  fill: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
   auto: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200',
   new: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
   history: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
@@ -34,6 +35,7 @@ const categoryNames: Record<CommandCategory, string> = {
   select: '选择',
   color: '染色',
   solve: '解题技巧',
+  fill: '填充',
   auto: '自动填充',
   new: '新题目',
   history: '撤销/重做',
@@ -121,9 +123,7 @@ export const CommandHelp: React.FC<CommandHelpProps> = ({
                     </span>
                     <span className="text-xs text-muted-foreground">({commands.length})</span>
                   </div>
-                  <span className="text-muted-foreground">
-                    {isExpanded ? '▼' : '▶'}
-                  </span>
+                  <span className="text-muted-foreground">{isExpanded ? '▼' : '▶'}</span>
                 </button>
               ) : (
                 <div className="px-3 py-2 flex items-center gap-2">
@@ -140,9 +140,7 @@ export const CommandHelp: React.FC<CommandHelpProps> = ({
                       <div className="flex items-center gap-1.5">
                         <code className="font-semibold text-primary">{cmd.name}</code>
                         {cmd.aliases.length > 0 && (
-                          <span className="text-muted-foreground">
-                            ({cmd.aliases.join(', ')})
-                          </span>
+                          <span className="text-muted-foreground">({cmd.aliases.join(', ')})</span>
                         )}
                       </div>
                       <p className="text-muted-foreground pl-1">{cmd.description}</p>

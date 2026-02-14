@@ -1,8 +1,7 @@
-import type { Position, Cell, SudokuSchema, Candidate, Digit } from "./types";
+import type { Position, Cell, SudokuSchema, Candidate, Digit } from './types';
 export function getBoxIndex(row: number, col: number): number {
   return Math.floor(row / 3) * 3 + Math.floor(col / 3);
 }
-
 export function getBoxRange(box: number): Position[] {
   const range: Position[] = [];
   const boxRow = Math.floor(box / 3);
@@ -46,7 +45,7 @@ export function getRelatedPositions(row: number, col: number): Position[] {
   return range;
 }
 export function getRelatedCells(cells: Cell[][], row: number, col: number): Cell[] {
-  return getRelatedPositions(row, col).map((pos) => cells[pos.row][pos.col])
+  return getRelatedPositions(row, col).map((pos) => cells[pos.row][pos.col]);
 }
 
 export function cloneCells(cells: Cell[][]): Cell[][] {
@@ -102,14 +101,34 @@ export function createNewSchema(nums: number[][]): SudokuSchema | null {
   };
 }
 
+/**
+ * 深度复制 SudokuSchema
+ */
+
+export function cloneSchema(schema: SudokuSchema): SudokuSchema {
+  return {
+    cells: schema.cells.map((row) =>
+      row.map(
+        (cell): Cell => ({
+          ...cell,
+          position: { ...cell.position },
+          candidates: cell.candidates ? cell.candidates.map((c) => ({ ...c })) : undefined,
+        })
+      )
+    ),
+    links: schema.links?.map((link) => ({ ...link })),
+    superLinks: schema.superLinks?.map((link) => ({ ...link })),
+  };
+}
+
 export function restartSchema(schema: SudokuSchema): SudokuSchema {
   const cells = cloneCells(schema.cells);
   for (let i = 0; i < 9; i++) {
     for (let j = 0; j < 9; j++) {
       if (cells[i][j].isGiven) {
-        cells[i][j] = { position: cells[i][j].position, digit: cells[i][j].digit, isGiven: true }
+        cells[i][j] = { position: cells[i][j].position, digit: cells[i][j].digit, isGiven: true };
       } else {
-        cells[i][j] = { position: cells[i][j].position }
+        cells[i][j] = { position: cells[i][j].position };
       }
     }
   }
@@ -129,7 +148,7 @@ export function fillCandidates(cells: Cell[][], row: number, col: number) {
   if (
     cells[row][col].isGiven ||
     cells[row][col].digit ||
-    cells[row][col].candidates && cells[row][col].candidates.length > 0
+    (cells[row][col].candidates && cells[row][col].candidates.length > 0)
   ) {
     return;
   }

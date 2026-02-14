@@ -1,17 +1,10 @@
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
-import {
-  SudokuSchema,
-  CellPosition,
-  Digit,
-  Candidate,
-  Cell,
-  getBoxIndex,
-} from '@/types/sudoku';
+import { SudokuSchema, Position, Digit, Candidate, Cell, getBoxIndex } from '@/lib/sudoku';
 
 interface SudokuCanvasProps {
   schema: SudokuSchema;
-  onCellClick: (position: CellPosition) => void;
-  onCandidateClick?: (position: CellPosition, digit: Digit) => void;
+  onCellClick: (position: Position) => void;
+  onCandidateClick?: (position: Position, digit: Digit) => void;
   size?: number;
 }
 
@@ -97,15 +90,15 @@ const getCellColorKey = (colorIndex: number): string => {
 // 候选数颜色映射 - 9种颜色（1灰+4对互补色）
 const getCandidateColorKey = (colorIndex: number): string => {
   const keys: Record<number, string> = {
-    1: 'candidate1',  // Gray
-    2: 'candidate2',  // Red
-    3: 'candidate3',  // Cyan
-    4: 'candidate4',  // Orange
-    5: 'candidate5',  // Blue
-    6: 'candidate6',  // Yellow
-    7: 'candidate7',  // Purple
-    8: 'candidate8',  // Green
-    9: 'candidate9',  // Magenta
+    1: 'candidate1', // Gray
+    2: 'candidate2', // Red
+    3: 'candidate3', // Cyan
+    4: 'candidate4', // Orange
+    5: 'candidate5', // Blue
+    6: 'candidate6', // Yellow
+    7: 'candidate7', // Purple
+    8: 'candidate8', // Green
+    9: 'candidate9', // Magenta
   };
   return keys[colorIndex] || 'muted';
 };
@@ -152,7 +145,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
         // 检查是否点击了候选数
         if (onCandidateClick) {
           const cell = schema.cells[row][col];
-          if (!cell.digit && cell.cornerCandidates.length > 0) {
+          if (!cell.digit && cell.candidates.length > 0) {
             const cellX = col * actualCellSize;
             const cellY = row * actualCellSize;
             const localX = x - cellX;
@@ -164,7 +157,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
             const clickedDigit = (gridRow * 3 + gridCol + 1) as Digit;
 
             // 检查该候选数是否存在
-            const candidate = cell.cornerCandidates.find((c) => c.digit === clickedDigit);
+            const candidate = cell.candidates.find((c) => c.digit === clickedDigit);
             if (candidate) {
               onCandidateClick({ row, col, box: getBoxIndex(row, col) }, clickedDigit);
               return;
@@ -210,7 +203,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
     // 渲染所有单元格
     for (let row = 0; row < 9; row++) {
       for (let col = 0; col < 9; col++) {
-        const cell = schema.cells && schema.cells.length === 9? schema.cells[row][col] : {};
+        const cell = schema.cells && schema.cells.length === 9 ? schema.cells[row][col] : {};
         const x = padding + col * actualCellSize;
         const y = padding + row * actualCellSize;
 
@@ -270,7 +263,12 @@ function drawCell(
     // 加粗边框
     ctx.lineWidth = 4;
     ctx.strokeStyle = colors.selectedCellBorder;
-    ctx.strokeRect(x+ctx.lineWidth/2, y+ctx.lineWidth/2, cellSize-ctx.lineWidth, cellSize-ctx.lineWidth);
+    ctx.strokeRect(
+      x + ctx.lineWidth / 2,
+      y + ctx.lineWidth / 2,
+      cellSize - ctx.lineWidth,
+      cellSize - ctx.lineWidth
+    );
   }
 
   // 绘制主值
@@ -292,8 +290,8 @@ function drawCell(
   }
 
   // 绘制角注（九宫格布局）
-  if (cell.cornerCandidates && cell.cornerCandidates.length > 0) {
-    drawCornerCandidates(ctx, cell.cornerCandidates, x, y, cellSize, colors);
+  if (cell.candidates && cell.candidates.length > 0) {
+    drawCornerCandidates(ctx, cell.candidates, x, y, cellSize, colors);
   }
 }
 
@@ -396,7 +394,7 @@ function drawGridLines(
 // 绘制链条
 function drawLinks(
   ctx: CanvasRenderingContext2D,
-  links: import('@/types/sudoku').Link[],
+  links: import('@/lib/sudoku').Link[],
   cellSize: number,
   colors: Record<string, string>,
   offset: number = 0

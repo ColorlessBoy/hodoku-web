@@ -2,27 +2,17 @@ import React from 'react';
 import { SudokuGrid } from './SudokuGrid';
 import { CommandPad } from './CommandPad';
 import { useSudokuState } from '@/hooks/useSudokuState';
-import { CellPosition, Digit, SudokuSchema } from '@/types/sudoku';
+import { Position, Digit, SudokuSchema } from '@/lib/sudoku';
 
 export const SudokuApp: React.FC = () => {
-  const {
-    schema,
-    selectCell,
-    setCellValue,
-    toggleCornerCandidate,
-    setCellColor,
-    setCandidateColor,
-    addLink,
-    clearLinks,
-    clearCell,
-    replaceSchema,
-  } = useSudokuState();
+  const { schema, selectCell, setCellValue, toggleCornerCandidate, clearCell, replaceSchema } =
+    useSudokuState();
 
-  const [selectedCell, setSelectedCell] = React.useState<CellPosition | null>(null);
+  const [selectedCell, setSelectedCell] = React.useState<Position | null>(null);
   const [mode, setMode] = React.useState<'normal' | 'corner'>('normal');
   const [overlaySchema, setOverlaySchema] = React.useState<SudokuSchema | null>(null);
 
-  const handleCellClick = (position: CellPosition) => {
+  const handleCellClick = (position: Position) => {
     setSelectedCell(position);
     selectCell(position);
   };

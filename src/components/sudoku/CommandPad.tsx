@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { SudokuSchema } from '@/types/sudoku';
-import { cloneSchema } from '@/lib/schemaAdapter';
+import { cloneSchema, type SudokuSchema } from '@/lib/sudoku';
 import { executeCommands, executeCommand } from '@/lib/CmdEngine';
 import { cn } from '@/lib/utils';
 import { CommandHelp } from './CommandHelp';
-
 
 interface CommandPadProps {
   schema: SudokuSchema;
@@ -46,22 +44,25 @@ export const CommandPad: React.FC<CommandPadProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 解析输入并返回中间状态 schema（用于实时预览）
-  const parseIntermediateSchema = useCallback((inputValue: string): SudokuSchema | null => {
-    const trimmed = inputValue.trim();
-    if (!trimmed) return null;
+  const parseIntermediateSchema = useCallback(
+    (inputValue: string): SudokuSchema | null => {
+      const trimmed = inputValue.trim();
+      if (!trimmed) return null;
 
-    // 只处理单个命令（不处理分号分隔的多命令）
-    if (trimmed.includes(';')) return null;
+      // 只处理单个命令（不处理分号分隔的多命令）
+      if (trimmed.includes(';')) return null;
 
-    // 执行命令但忽略错误
-    const result = executeCommand(schema, trimmed);
+      // 执行命令但忽略错误
+      const result = executeCommand(schema, trimmed);
 
-    if (result.type === 'intermediate' || result.type === 'ok') {
-      return result.schema;
-    }
+      if (result.type === 'intermediate' || result.type === 'ok') {
+        return result.schema;
+      }
 
-    return null;
-  }, [schema]);
+      return null;
+    },
+    [schema]
+  );
 
   // 输入变化时实时更新中间状态
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,7 +200,18 @@ export const CommandPad: React.FC<CommandPadProps> = ({
     addHistory(input);
     setInput('');
     inputRef.current?.focus();
-  }, [input, schema, pushUndo, doUndo, doRedo, addHistory, setUndoStack, replaceSchema, errorMsg]);
+  }, [
+    input,
+    schema,
+    pushUndo,
+    doUndo,
+    doRedo,
+    addHistory,
+    setUndoStack,
+    replaceSchema,
+    cleanHistory,
+    onIntermediateSchema,
+  ]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
