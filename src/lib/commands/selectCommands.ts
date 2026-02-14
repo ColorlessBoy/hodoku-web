@@ -45,7 +45,7 @@ class SelectCellCmd extends BaseCommand {
       if (arg.length === 0) {
         return this.error();
       }
-      if (args.length === 1) {
+      if (arg.length === 1) {
         const row = toRow(arg[0]);
         cleanAllCellsSelected(cells);
         setRowSelected(cells, row);
@@ -58,7 +58,7 @@ class SelectCellCmd extends BaseCommand {
       }
     }
     if (!changed) {
-      return this.error('没有格子被改变');
+      return this.error();
     }
     return ok({ ...schema, cells });
   }
@@ -150,7 +150,7 @@ class SelectDigitCmd extends BaseCommand {
   constructor() {
     super({
       name: 'sdigit',
-      aliases: ['sd', 's'],
+      aliases: ['sd'],
       category: 'select',
       description: '选择数字',
       args: [
@@ -190,6 +190,7 @@ class SelectXYCmd extends BaseCommand {
   execute(schema: SudokuSchema): CmdResult {
     let changed = false;
     const cells = cloneCells(schema.cells);
+    console.log('SelectXYCmd');
     if (setXYSelected(cells)) {
       changed = true;
     }

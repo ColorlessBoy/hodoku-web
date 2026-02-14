@@ -64,6 +64,13 @@ export function hasCandidate(cell: Cell, digit: Digit): boolean {
   return false;
 }
 
+export function hasDigit(cell: Cell, digit: Digit): boolean {
+  if (cell.digit === digit) {
+    return true;
+  }
+  return hasCandidate(cell, digit);
+}
+
 export function createNewSchema(nums: number[][]): SudokuSchema | null {
   if (nums.length !== 9) {
     return null;

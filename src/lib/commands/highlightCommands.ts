@@ -42,9 +42,7 @@ class HighlightCellCmd extends BaseCommand {
 
   execute(schema: SudokuSchema, args: string[]): CmdResult {
     let changed = false;
-    console.log('highlightCell', args);
     const cells = cloneCells(schema.cells);
-    console.log('highlightCell clonecells');
     for (const arg of args) {
       if (arg.length === 0) {
         return this.error();

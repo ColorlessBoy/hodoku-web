@@ -43,35 +43,27 @@ function setCandidatesSelected(
 }
 
 export function setCellSelected(cell: Cell, selected: boolean = true, digit?: Digit): boolean {
-  const changed = checkSelected(cell, selected);
+  const changed = !checkSelected(cell, selected);
   if (digit === undefined) {
     // 只针对单元格的设置
-    if (cell.isSelected !== selected) {
-      cell.isSelected = selected;
-    }
+    cell.isSelected = selected;
     if (cell.candidates) {
       for (const c of cell.candidates) {
-        if (c.isSelected !== undefined) {
-          // 消去候选数的 Selected 状态
-          c.isSelected = undefined;
-        }
+        // 消去候选数的 Selected 状态
+        c.isSelected = undefined;
       }
     }
   }
   // 针对有数的格子
   if (cell.digit === digit) {
-    if (cell.isSelected !== selected) {
-      cell.isSelected = selected;
-    }
+    cell.isSelected = selected;
     // 没有候选数，所以不用处理
   } else {
     if (hasCandidate(cell, digit)) {
       // 针对命中的候选数的格子
       setCandidatesSelected(cell.candidates, selected, digit);
-      if (cell.isSelected !== undefined) {
-        // 候选数设置了 Selected 后，消去 Cell 的 Selected 状态
-        cell.isSelected = undefined;
-      }
+      // 候选数设置了 Selected 后，消去 Cell 的 Selected 状态
+      cell.isSelected = undefined;
     }
   }
   return changed;
@@ -227,7 +219,7 @@ export function setXYSelected(
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         const cell = cells[r][c];
-        if (cell.candidates?.length !== 2) {
+        if (!(cell.candidates?.length === 2)) {
           if (setCellSelected(cell, !selected)) {
             changed = true;
           }
@@ -239,6 +231,7 @@ export function setXYSelected(
       for (let c = 0; c < 9; c++) {
         const cell = cells[r][c];
         if (cell.candidates?.length === 2) {
+          console.log(`setXYSelected: ${r}, ${c}`);
           if (setCellSelected(cell, selected)) {
             changed = true;
           }

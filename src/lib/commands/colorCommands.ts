@@ -4,7 +4,7 @@
  * 使用类继承方式定义命令
  */
 
-import type { Color, SudokuSchema } from '@/lib/sudoku/types';
+import type { SudokuSchema } from '@/lib/sudoku/types';
 import type { CmdResult } from './types';
 import {
   cleanAllCellsSelected,
@@ -55,16 +55,12 @@ class ColorCellCandidateCmd extends BaseCommand {
         return intermediate({ ...schema, cells });
       }
       const col = toCol(arg[1]);
-      if (arg.length === 2) {
+      if (arg.length === 2 || arg.length === 3) {
         cleanAllCellsSelected(cells);
         setCellSelected(cells[row][col]);
         return intermediate({ ...schema, cells });
       }
       const digit = toDigit(arg[2]);
-      if (arg.length === 3) {
-        setCellCandidateColor(cells[row][col], digit, 1 as Color);
-        return intermediate({ ...schema, cells });
-      }
       const color = toColor0(arg[3]);
       if (setCellCandidateColor(cells[row][col], digit, color)) {
         changed = true;
@@ -108,7 +104,9 @@ class ColorRowCandidateCmd extends BaseCommand {
       }
       const digit = toDigit(arg[1]);
       if (arg.length === 2) {
-        setRowCandidateColor(cells, row, digit, 1 as Color);
+        cleanAllCellsSelected(cells);
+        setRowSelected(cells, row);
+        setDigitSelected(cells, digit, true, true);
       }
       const color = toColor0(arg[2]);
       if (setRowCandidateColor(cells, row, digit, color)) {
@@ -153,7 +151,9 @@ class ColorColCandidateCmd extends BaseCommand {
       }
       const digit = toDigit(arg[1]);
       if (arg.length === 2) {
-        setColCandidateColor(cells, col, digit, 1 as Color);
+        cleanAllCellsSelected(cells);
+        setColSelected(cells, col);
+        setDigitSelected(cells, digit, true, true);
       }
       const color = toColor0(arg[2]);
       if (setColCandidateColor(cells, col, digit, color)) {

@@ -247,7 +247,7 @@ export const CommandPad: React.FC<CommandPadProps> = ({
           value={input}
           onChange={handleInputChange}
           onKeyDown={onKeyDown}
-          placeholder="示例: s r1c1 5; k r1c1 3"
+          placeholder="示例: s 11; h 1"
           className="flex-1 px-3 py-2 rounded-md border border-input bg-background text-foreground text-sm outline-none focus:ring-2 focus:ring-ring"
         />
         <button

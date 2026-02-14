@@ -44,7 +44,7 @@ export function setCellHighlighted(
   highlighted: boolean = true,
   digit?: Digit
 ): boolean {
-  const changed = checkHighlighted(cell, highlighted);
+  const changed = !checkHighlighted(cell, highlighted);
   if (digit === undefined) {
     // 只针对单元格的设置
     cell.isHighlighted = highlighted;

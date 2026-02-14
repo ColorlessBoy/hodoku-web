@@ -5,7 +5,7 @@
  * 自动适应高度，内容过多时内部滚动，不超出视口
  */
 
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import type { CommandCategory } from '@/lib/commands/types';
 
