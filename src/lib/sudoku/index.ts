@@ -26,7 +26,7 @@ export {
   selectHighlighted,
 } from './select';
 export {
-  fillUniqueCandidateAuto,
+  fillLastCandidateAuto as fillUniqueCandidateAuto,
   fillLastDigitInRow,
   fillLastDigitInCol,
   fillLastDigitInBox,

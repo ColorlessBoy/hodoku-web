@@ -1,6 +1,6 @@
 import type { Digit, Cell } from './types';
 import { getBoxCells, hasCandidate, setCell } from './basic';
-export function fillUniqueCandidateAuto(cells: Cell[][]): boolean {
+export function fillLastCandidateAuto(cells: Cell[][]): boolean {
   let changed = false;
   for (let i = 0; i < 81; i++) {
     let hasUnique = false;
@@ -22,7 +22,7 @@ export function fillUniqueCandidateAuto(cells: Cell[][]): boolean {
   return changed;
 }
 
-export function fillUniqueCandidate(cells: Cell[][], row: number, col: number): boolean {
+export function fillLastCandidate(cells: Cell[][], row: number, col: number): boolean {
   const cell = cells[row][col];
   if (cell.isGiven || cell.digit !== undefined || cell.candidates?.length !== 1) {
     return false;
@@ -30,7 +30,7 @@ export function fillUniqueCandidate(cells: Cell[][], row: number, col: number): 
   return setCell(cells, row, col, cell.candidates[0].digit);
 }
 
-export function fillLastDigitInRow(cells: Cell[][], row: number, digit: Digit): boolean {
+export function fillLastDigitInRow(cells: Cell[][], row: number, digit: Digit): [boolean, number] {
   let cnt = 0;
   let col = -1;
   for (let c = 0; c < 9; c++) {
@@ -43,9 +43,9 @@ export function fillLastDigitInRow(cells: Cell[][], row: number, digit: Digit): 
     }
   }
   if (cnt !== 1 || col === -1) {
-    return false;
+    return [false, -1];
   }
-  return setCell(cells, row, col, digit);
+  return [setCell(cells, row, col, digit), col];
 }
 
 export function fillLastDigitInCol(cells: Cell[][], col: number, digit: Digit): boolean {

@@ -7,7 +7,7 @@ export function checkHighlighted(cell: Cell, highlighted: boolean = true): boole
   if (cell.isHighlighted === true) {
     isTrue = true;
   }
-  if (cell.candidates !== undefined) {
+  if (cell.candidates?.length > 0) {
     for (const c of cell.candidates) {
       if (c.isHighlighted === true) {
         isTrue = true;
@@ -24,15 +24,14 @@ function setCandidatesHighlighted(
   highlighted: boolean = true,
   digit?: Digit
 ): boolean {
-  if (candidates === undefined) {
-    return false;
-  }
   let changed = false;
-  for (const c of candidates) {
-    if (c.digit === digit) {
-      c.isHighlighted = highlighted;
-      if (c.isHighlighted !== highlighted) {
-        changed = true;
+  if (candidates?.length > 0) {
+    for (const c of candidates) {
+      if (c.digit === digit) {
+        c.isHighlighted = highlighted;
+        if (c.isHighlighted !== highlighted) {
+          changed = true;
+        }
       }
     }
   }

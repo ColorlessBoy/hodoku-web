@@ -126,6 +126,7 @@ export function getCategories(): { id: CommandCategory; name: string }[] {
     { id: 'highlight', name: '高亮' },
     { id: 'select', name: '选择' },
     { id: 'color', name: '染色' },
+    { id: 'fill', name: '填充' },
     { id: 'solve', name: '解题技巧' },
     { id: 'auto', name: '自动填充' },
     { id: 'new', name: '新题目' },

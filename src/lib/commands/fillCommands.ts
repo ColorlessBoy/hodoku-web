@@ -7,7 +7,7 @@
 import type { SudokuSchema } from '@/lib/sudoku/types';
 import type { CmdResult } from './types';
 import {
-  fillUniqueCandidateAuto,
+  fillUniqueCandidateAuto as fillLastCandidateAuto,
   fillLastDigitInRow,
   fillLastDigitInCol,
   fillLastDigitInBox,
@@ -15,47 +15,91 @@ import {
   setRowSelected,
   setColSelected,
   setBoxSelected,
+  setCellSelected,
 } from '@/lib/sudoku';
 import { ok, intermediate, toDigit, toRow, toCol, toBox } from './utils';
 import { BaseCommand } from './Command';
 import { cloneCells } from '../sudoku/basic';
+import { fillLastCandidate } from '../sudoku/fill';
 
 // ============================================================================
 // 自动填充命令
 // ============================================================================
 
-class FillUniqueCandidateAutoCmd extends BaseCommand {
+class FillLastCandidateAutoCmd extends BaseCommand {
   constructor() {
     super({
-      name: 'autofu',
-      aliases: ['afu'],
+      name: 'autolastcandidates',
+      aliases: ['autolc'],
       category: 'fill',
       description: '自动填充所有可确定的格子',
       args: [],
-      examples: ['autofu', 'afu'],
+      examples: ['autolc'],
     });
   }
 
   execute(schema: SudokuSchema): CmdResult {
     const cells = cloneCells(schema.cells);
-    if (fillUniqueCandidateAuto(cells)) {
+    if (fillLastCandidateAuto(cells)) {
       return ok({ ...schema, cells });
     }
     return this.error('自动填充失败');
   }
 }
 
+class FillLastCandidateCmd extends BaseCommand {
+  constructor() {
+    super({
+      name: 'lastcandidate',
+      aliases: ['lc'],
+      category: 'fill',
+      description: '填充可确定的格子',
+      args: [
+        { type: 'pos', name: 'cells', description: '格子位置（如 11, 23）', repeatable: true },
+      ],
+      examples: ['lc 12'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    let changed = false;
+    const cells = cloneCells(schema.cells);
+    for (const arg of args) {
+      if (arg.length === 0) {
+        return this.error();
+      }
+      if (arg.length === 1) {
+        const row = toRow(arg[0]);
+        cleanAllCellsSelected(cells);
+        setRowSelected(cells, row);
+        return intermediate({ ...schema, cells });
+      }
+      const row = toRow(arg[0]);
+      const col = toCol(arg[1]);
+      if (fillLastCandidate(cells, row, col)) {
+        changed = true;
+        cleanAllCellsSelected(cells);
+        setCellSelected(cells[row][col]);
+      }
+    }
+    if (!changed) {
+      return this.error();
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
 class FillLastDigitInRowCommand extends BaseCommand {
   constructor() {
     super({
-      name: 'fr',
-      aliases: ['fr'],
+      name: 'lastdigitrow',
+      aliases: ['ldr'],
       category: 'fill',
       description: '填充行最后数',
       args: [
         { type: 'pos', name: 'rowdigit', description: '行+数字（如 12, 32）', repeatable: true },
       ],
-      examples: ['fr 12', 'fr 32 32'],
+      examples: ['ldr 12', 'ldr 32 32'],
     });
   }
 
@@ -73,8 +117,11 @@ class FillLastDigitInRowCommand extends BaseCommand {
       }
       const row = toRow(arg[0]);
       const digit = toDigit(arg[1]);
-      if (fillLastDigitInRow(cells, row, digit)) {
+      const [success, col] = fillLastDigitInRow(cells, row, digit);
+      if (success) {
         changed = true;
+        cleanAllCellsSelected(cells);
+        setCellSelected(cells[row][col]);
       }
     }
     if (!changed) {
@@ -87,8 +134,8 @@ class FillLastDigitInRowCommand extends BaseCommand {
 class FillLastDigitInColCommand extends BaseCommand {
   constructor() {
     super({
-      name: 'fc',
-      aliases: ['fc'],
+      name: 'lastdigitcol',
+      aliases: ['ldc'],
       category: 'fill',
       description: '填充列最后数',
       args: [
@@ -99,7 +146,7 @@ class FillLastDigitInColCommand extends BaseCommand {
           repeatable: true,
         },
       ],
-      examples: ['fc 12', 'fc 32 32'],
+      examples: ['ldc 12', 'ldc 13 32'],
     });
   }
   execute(schema: SudokuSchema, args: string[]): CmdResult {
@@ -130,14 +177,14 @@ class FillLastDigitInColCommand extends BaseCommand {
 class FillLastDigitInBoxCommand extends BaseCommand {
   constructor() {
     super({
-      name: 'fb',
-      aliases: ['fb'],
+      name: 'lastdigitbox',
+      aliases: ['ldb'],
       category: 'fill',
       description: '填充框最后数',
       args: [
         { type: 'pos', name: 'boxdigit', description: '框+数字（如 12, 32）', repeatable: true },
       ],
-      examples: ['fb 12', 'fb 32 32'],
+      examples: ['ldb 12', 'ldb 13 32'],
     });
   }
 
@@ -170,22 +217,28 @@ class FillLastDigitInBoxCommand extends BaseCommand {
 // 导出
 // ============================================================================
 
-const fillUniqueCandidateAutoCmd = new FillUniqueCandidateAutoCmd();
+const fillLastCandidateAutoCmd = new FillLastCandidateAutoCmd();
+const fillLastCandidateCmd = new FillLastCandidateCmd();
 const fillLastDigitInRowCmd = new FillLastDigitInRowCommand();
 const fillLastDigitInColCmd = new FillLastDigitInColCommand();
 const fillLastDigitInBoxCmd = new FillLastDigitInBoxCommand();
 
 export {
-  fillUniqueCandidateAutoCmd,
+  fillLastCandidateAutoCmd,
+  fillLastCandidateCmd,
   fillLastDigitInRowCmd,
   fillLastDigitInColCmd,
   fillLastDigitInBoxCmd,
 };
 
 export const fillCommands = {
-  [fillUniqueCandidateAutoCmd.name]: {
-    meta: fillUniqueCandidateAutoCmd.getMeta(),
-    handler: fillUniqueCandidateAutoCmd.handle.bind(fillUniqueCandidateAutoCmd),
+  [fillLastCandidateAutoCmd.name]: {
+    meta: fillLastCandidateAutoCmd.getMeta(),
+    handler: fillLastCandidateAutoCmd.handle.bind(fillLastCandidateAutoCmd),
+  },
+  [fillLastCandidateCmd.name]: {
+    meta: fillLastCandidateCmd.getMeta(),
+    handler: fillLastCandidateCmd.handle.bind(fillLastCandidateCmd),
   },
   [fillLastDigitInRowCmd.name]: {
     meta: fillLastDigitInRowCmd.getMeta(),

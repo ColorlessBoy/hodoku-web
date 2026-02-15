@@ -7,7 +7,7 @@ export function checkSelected(cell: Cell, selected: boolean = true): boolean {
   if (cell.isSelected === true) {
     isTrue = true;
   }
-  if (cell.candidates !== undefined) {
+  if (cell.candidates?.length > 0) {
     for (const c of cell.candidates) {
       if (c.isSelected === true) {
         isTrue = true;
@@ -29,14 +29,13 @@ function setCandidatesSelected(
   selected: boolean,
   digit?: Digit
 ): boolean {
-  if (candidates === undefined) {
-    return false;
-  }
   let changed = false;
-  for (const c of candidates) {
-    if (c.digit === digit && c.isSelected !== selected) {
-      c.isSelected = selected;
-      changed = true;
+  if (candidates.length > 0) {
+    for (const c of candidates) {
+      if (c.digit === digit && c.isSelected !== selected) {
+        c.isSelected = selected;
+        changed = true;
+      }
     }
   }
   return changed;
