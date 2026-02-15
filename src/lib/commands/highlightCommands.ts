@@ -62,6 +62,7 @@ class HighlightCellCmd extends BaseCommand {
     if (!changed) {
       return this.error('没有格子被改变');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -90,6 +91,7 @@ class HighlightRowCmd extends BaseCommand {
     if (!changed) {
       return this.error('没有行被改变');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -117,6 +119,7 @@ class HighlightColCmd extends BaseCommand {
     if (!changed) {
       return this.error('没有列被改变');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -144,6 +147,7 @@ class HighlightBoxCmd extends BaseCommand {
     if (!changed) {
       return this.error('没有宫被改变');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -176,6 +180,7 @@ class HighlightDigitCmd extends BaseCommand {
     if (!changed) {
       return this.error('没有数字被改变');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -201,6 +206,7 @@ class HighlightXYCmd extends BaseCommand {
     if (!changed) {
       return this.error('没有坐标被改变');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }

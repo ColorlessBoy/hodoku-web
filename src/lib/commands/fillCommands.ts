@@ -20,7 +20,7 @@ import {
 import { ok, intermediate, toDigit, toRow, toCol, toBox } from './utils';
 import { BaseCommand } from './Command';
 import { cloneCells } from '../sudoku/basic';
-import { fillLastCandidate } from '../sudoku/fill';
+import { fillLastCandidate, groupedDigitInBoxCol, groupedDigitInBoxRow } from '../sudoku/fill';
 
 // ============================================================================
 // 自动填充命令
@@ -213,6 +213,110 @@ class FillLastDigitInBoxCommand extends BaseCommand {
   }
 }
 
+class GroupedDigitInBoxRowCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'groupeddigitboxrow',
+      aliases: ['gbr'],
+      category: 'fill',
+      description: '某个数字集中在行和框的交集区域，可以排除该行和列的并集区域的其他数字',
+      args: [
+        {
+          type: 'pos',
+          name: 'boxrowdigit',
+          description: '框+行+数字（如 12, 32）',
+          repeatable: true,
+        },
+      ],
+      examples: ['gbr 125', 'gbr 135'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    let changed = false;
+    const cells = cloneCells(schema.cells);
+    for (const arg of args) {
+      if (arg.length === 0) {
+        return this.error();
+      } else if (arg.length === 1) {
+        const box = toBox(arg[0]);
+        cleanAllCellsSelected(cells);
+        setBoxSelected(cells, box);
+        return intermediate({ ...schema, cells });
+      } else if (arg.length === 2) {
+        const box = toBox(arg[0]);
+        const row = toRow(arg[1]);
+        cleanAllCellsSelected(cells);
+        setBoxSelected(cells, box);
+        setRowSelected(cells, row, true, true);
+        return intermediate({ ...schema, cells });
+      }
+      const box = toBox(arg[0]);
+      const row = toRow(arg[1]);
+      const digit = toDigit(arg[2]);
+      if (groupedDigitInBoxRow(cells, box, row, digit)) {
+        changed = true;
+      }
+    }
+    if (!changed) {
+      return this.error();
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
+class GroupedDigitInBoxColCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'groupeddigitboxcol',
+      aliases: ['gbc'],
+      category: 'fill',
+      description: '某个数字集中在行和框的交集区域，可以排除该行和列的并集区域的其他数字',
+      args: [
+        {
+          type: 'pos',
+          name: 'boxcoldigit',
+          description: '框+列+数字（如 12, 32）',
+          repeatable: true,
+        },
+      ],
+      examples: ['gbc 125', 'gbc 135'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    let changed = false;
+    const cells = cloneCells(schema.cells);
+    for (const arg of args) {
+      if (arg.length === 0) {
+        return this.error();
+      } else if (arg.length === 1) {
+        const box = toBox(arg[0]);
+        cleanAllCellsSelected(cells);
+        setBoxSelected(cells, box);
+        return intermediate({ ...schema, cells });
+      } else if (arg.length === 2) {
+        const box = toBox(arg[0]);
+        const col = toCol(arg[1]);
+        cleanAllCellsSelected(cells);
+        setBoxSelected(cells, box);
+        setColSelected(cells, col, true, true);
+        return intermediate({ ...schema, cells });
+      }
+      const box = toBox(arg[0]);
+      const col = toCol(arg[1]);
+      const digit = toDigit(arg[2]);
+      if (groupedDigitInBoxCol(cells, box, col, digit)) {
+        changed = true;
+      }
+    }
+    if (!changed) {
+      return this.error();
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
 // ============================================================================
 // 导出
 // ============================================================================
@@ -222,6 +326,8 @@ const fillLastCandidateCmd = new FillLastCandidateCmd();
 const fillLastDigitInRowCmd = new FillLastDigitInRowCommand();
 const fillLastDigitInColCmd = new FillLastDigitInColCommand();
 const fillLastDigitInBoxCmd = new FillLastDigitInBoxCommand();
+const groupedDigitInBoxRowCmd = new GroupedDigitInBoxRowCommand();
+const groupedDigitInBoxColCmd = new GroupedDigitInBoxColCommand();
 
 export {
   fillLastCandidateAutoCmd,
@@ -229,6 +335,8 @@ export {
   fillLastDigitInRowCmd,
   fillLastDigitInColCmd,
   fillLastDigitInBoxCmd,
+  groupedDigitInBoxRowCmd,
+  groupedDigitInBoxColCmd,
 };
 
 export const fillCommands = {
@@ -251,5 +359,13 @@ export const fillCommands = {
   [fillLastDigitInBoxCmd.name]: {
     meta: fillLastDigitInBoxCmd.getMeta(),
     handler: fillLastDigitInBoxCmd.handle.bind(fillLastDigitInBoxCmd),
+  },
+  [groupedDigitInBoxRowCmd.name]: {
+    meta: groupedDigitInBoxRowCmd.getMeta(),
+    handler: groupedDigitInBoxRowCmd.handle.bind(groupedDigitInBoxRowCmd),
+  },
+  [groupedDigitInBoxColCmd.name]: {
+    meta: groupedDigitInBoxColCmd.getMeta(),
+    handler: groupedDigitInBoxColCmd.handle.bind(groupedDigitInBoxColCmd),
   },
 };
