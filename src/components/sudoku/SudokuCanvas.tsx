@@ -137,6 +137,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
   const padding = 2; // Canvas内边距，避免圆角裁切边框
   const actualSize = size - padding * 2;
   const actualCellSize = actualSize / 9;
+  const labelPadding = 20; // 行列标记区域宽度
 
   // 处理点击
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {}, []);
@@ -156,9 +157,12 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
     // 设置高清渲染
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    // 清除画布并绘制圆角矩形背景
+    // 清除画布
     ctx.clearRect(0, 0, size, size);
     ctx.save();
+
+    // 绘制行列标记
+    drawRowColLabels(ctx, actualSize, actualCellSize, colors, padding, labelPadding);
 
     // 绘制圆角裁切区域
     const radius = 8;
@@ -188,7 +192,7 @@ export const SudokuCanvas: React.FC<SudokuCanvasProps> = ({
     drawLinks(ctx, schema.links, actualCellSize, colors, padding);
 
     ctx.restore();
-  }, [schema, size, actualCellSize, actualSize, dpr, padding]);
+  }, [schema, size, actualCellSize, actualSize, dpr, padding, labelPadding]);
 
   return (
     <canvas
@@ -449,4 +453,54 @@ function drawLinks(
     ctx.arc(from.x, from.y, 4, 0, Math.PI * 2);
     ctx.fill();
   });
+}
+
+// 绘制行列标记
+function drawRowColLabels(
+  ctx: CanvasRenderingContext2D,
+  size: number,
+  cellSize: number,
+  colors: Record<string, string>,
+  offset: number = 0,
+  labelPadding: number = 20
+) {
+  ctx.save();
+
+  // 字体设置
+  const fontSize = cellSize * 0.4;
+  ctx.font = `400 ${fontSize}px Inter, system-ui, sans-serif`;
+  ctx.textBaseline = 'middle';
+
+  // 提取基础颜色的亮度值，用于调整文字颜色
+  const getColorBrightness = (color: string): number => {
+    const match = color.match(/hsl\((\d+(?:\.\d+)?),\s*(\d+)%,\s*(\d+)%\)/);
+    if (match) {
+      const l = parseFloat(match[3]);
+      return l;
+    }
+    return 50;
+  };
+
+  const bgBrightness = getColorBrightness(colors.gridBg);
+  const labelColor = bgBrightness > 50 ? '#666666' : '#999999';
+
+  // 绘制列标（A-I）在盘面上方
+  ctx.textAlign = 'center';
+  for (let col = 0; col < 9; col++) {
+    const x = offset + col * cellSize + cellSize / 2;
+    const y = offset - labelPadding;
+    ctx.fillStyle = labelColor;
+    ctx.fillText(String.fromCharCode(65 + col), x, y);
+  }
+
+  // 绘制行标（1-9）在盘面左侧
+  ctx.textAlign = 'center';
+  for (let row = 0; row < 9; row++) {
+    const x = offset - labelPadding;
+    const y = offset + row * cellSize + cellSize / 2;
+    ctx.fillStyle = labelColor;
+    ctx.fillText(String(String(row + 1)), x, y);
+  }
+
+  ctx.restore();
 }
