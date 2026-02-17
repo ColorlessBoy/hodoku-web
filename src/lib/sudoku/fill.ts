@@ -1,5 +1,5 @@
 import type { Digit, Cell } from './types';
-import { getBoxCells, hasCandidate, hasDigit, setCell } from './basic';
+import { getBoxCells, getBoxIndex, hasCandidate, hasDigit, setCell } from './basic';
 export function fillLastCandidateAuto(cells: Cell[][]): boolean {
   let changed = false;
   for (let i = 0; i < 81; i++) {
@@ -30,7 +30,7 @@ export function fillLastCandidate(cells: Cell[][], row: number, col: number): bo
   return setCell(cells, row, col, cell.candidates[0].digit);
 }
 
-export function fillLastDigitInRow(cells: Cell[][], row: number, digit: Digit): [boolean, number] {
+export function fillLastDigitInRow(cells: Cell[][], row: number, digit: Digit): boolean {
   let cnt = 0;
   let col = -1;
   for (let c = 0; c < 9; c++) {
@@ -42,10 +42,17 @@ export function fillLastDigitInRow(cells: Cell[][], row: number, digit: Digit): 
       col = c;
     }
   }
-  if (cnt !== 1 || col === -1) {
-    return [false, -1];
+  if (cnt > 1 && col !== -1) {
+    // 尝试grouped digit
+    const box = getBoxIndex(row, col);
+    if (groupedDigitInBoxRow(cells, box, row, digit)) {
+      return true;
+    }
   }
-  return [setCell(cells, row, col, digit), col];
+  if (cnt !== 1 || col === -1) {
+    return false;
+  }
+  return setCell(cells, row, col, digit);
 }
 
 export function fillLastDigitInCol(cells: Cell[][], col: number, digit: Digit): boolean {
@@ -58,6 +65,13 @@ export function fillLastDigitInCol(cells: Cell[][], col: number, digit: Digit): 
     } else if (hasCandidate(cell, digit)) {
       cnt++;
       row = r;
+    }
+  }
+  if (cnt > 1 && row !== -1) {
+    // 尝试grouped digit
+    const box = getBoxIndex(row, col);
+    if (groupedDigitInBoxCol(cells, box, col, digit)) {
+      return true;
     }
   }
   if (cnt !== 1 || row === -1) {
@@ -77,6 +91,15 @@ export function fillLastDigitInBox(cells: Cell[][], box: number, digit: Digit): 
       cnt++;
       row = cell.position.row;
       col = cell.position.col;
+    }
+  }
+  if (cnt > 1 && row !== -1 && col !== -1) {
+    // 尝试grouped digit
+    if (groupedDigitInBoxRow(cells, box, row, digit)) {
+      return true;
+    }
+    if (groupedDigitInBoxCol(cells, box, col, digit)) {
+      return true;
     }
   }
   if (cnt !== 1 || row === -1 || col === -1) {

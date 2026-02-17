@@ -5,8 +5,7 @@ import { useSudokuState } from '@/hooks/useSudokuState';
 import { Position, Digit, SudokuSchema } from '@/lib/sudoku';
 
 export const SudokuApp: React.FC = () => {
-  const { schema, selectCell, setCellValue, clearCell, replaceSchema } =
-    useSudokuState();
+  const { schema, selectCell, setCellValue, clearCell, replaceSchema } = useSudokuState();
 
   const [selectedCell, setSelectedCell] = React.useState<Position | null>(null);
   const [mode, setMode] = React.useState<'normal' | 'corner'>('normal');
@@ -17,21 +16,6 @@ export const SudokuApp: React.FC = () => {
     selectCell(position);
   };
 
-  const handleNumberClick = (digit: Digit) => {
-    if (!selectedCell) return;
-
-    if (mode === 'normal') {
-      setCellValue(selectedCell, digit);
-    } else if (mode === 'corner') {
-      toggleCornerCandidate(selectedCell, digit);
-    }
-  };
-
-  const handleClear = () => {
-    if (!selectedCell) return;
-    clearCell(selectedCell);
-  };
-
   return (
     <div className="h-screen bg-background flex items-start justify-center p-4 overflow-hidden">
       <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-start w-full max-w-7xl h-full">
@@ -40,7 +24,7 @@ export const SudokuApp: React.FC = () => {
           <SudokuGrid
             schema={schema}
             onCellClick={handleCellClick}
-            onCandidateClick={(position, digit) => toggleCornerCandidate(position, digit)}
+            onCandidateClick={(position, digit) => {}}
             size={Math.min(window.innerHeight - 64, window.innerWidth - 64)}
             overlaySchema={overlaySchema}
           />

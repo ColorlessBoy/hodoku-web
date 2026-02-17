@@ -52,6 +52,23 @@ class FillLastCandidateAutoCmd extends BaseCommand {
   }
 }
 
+class FillLastDigitAutoCmd extends BaseCommand {
+  constructor() {
+    super({
+      name: 'autolastdigits',
+      aliases: ['autold'],
+      category: 'fill',
+      description: '自动填充所有可确定的数字',
+      args: [],
+      examples: ['autold'],
+    });
+  }
+
+  execute(schema: SudokuSchema): CmdResult {
+    return this.error('还没有实现');
+  }
+}
+
 class FillLastCandidateCmd extends BaseCommand {
   constructor() {
     super({
@@ -122,16 +139,15 @@ class FillLastDigitInRowCommand extends BaseCommand {
       }
       const row = toRow(arg[0]);
       const digit = toDigit(arg[1]);
-      const [success, col] = fillLastDigitInRow(cells, row, digit);
+      const success = fillLastDigitInRow(cells, row, digit);
       if (success) {
         changed = true;
-        cleanAllCellsSelected(cells);
-        setCellSelected(cells[row][col]);
       }
     }
     if (!changed) {
       return this.error('没有格子被填充');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -175,6 +191,7 @@ class FillLastDigitInColCommand extends BaseCommand {
     if (!changed) {
       return this.error('没有格子被填充');
     }
+    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
