@@ -4,7 +4,7 @@
  * 使用类继承方式定义命令
  */
 
-import type { SudokuSchema } from '@/lib/sudoku/types';
+import type { Position, SudokuSchema } from '@/lib/sudoku/types';
 import type { CmdResult } from './types';
 import {
   fillUniqueCandidateAuto as fillLastCandidateAuto,
@@ -16,11 +16,16 @@ import {
   setColSelected,
   setBoxSelected,
   setCellSelected,
+  cleanCellHighlighted,
+  cleanAllCellsHighlighted,
+  setDigitHighlighted,
 } from '@/lib/sudoku';
 import { ok, intermediate, toDigit, toRow, toCol, toBox } from './utils';
 import { BaseCommand } from './Command';
-import { cloneCells } from '../sudoku/basic';
+import { cloneCells, getBoxIndex } from '../sudoku/basic';
 import { fillLastCandidate, groupedDigitInBoxCol, groupedDigitInBoxRow } from '../sudoku/fill';
+import { highlightDigitCmd } from './highlightCommands';
+import { buildChain, buildXChain, removeCandidatesByChains } from '../sudoku/link';
 
 // ============================================================================
 // 自动填充命令
@@ -317,6 +322,143 @@ class GroupedDigitInBoxColCommand extends BaseCommand {
   }
 }
 
+class XChainCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'xchain',
+      aliases: ['xc'],
+      category: 'fill',
+      description: '同数链',
+      args: [
+        {
+          type: 'digit',
+          name: 'd',
+          description: '数字',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos',
+          description: '行+列（如 12, 32）',
+          repeatable: true,
+        },
+      ],
+      examples: ['xc 1 12 34'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    const digit = toDigit(args[0]);
+    cleanAllCellsHighlighted(cells);
+    setDigitHighlighted(cells, digit);
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
+    cleanAllCellsSelected(cells);
+    const positions: Position[] = [];
+    for (const arg of args.slice(1)) {
+      if (arg.length === 0) {
+        return this.error();
+      } else if (arg.length === 1) {
+        const row = toRow(arg[0]);
+        setRowSelected(cells, row);
+        return intermediate({ ...schema, cells });
+      } else if (arg.length === 2) {
+        const row = toRow(arg[0]);
+        const col = toCol(arg[1]);
+        setCellSelected(cells[row][col]);
+        positions.push({ row, col, box: getBoxIndex(row, col) });
+      }
+    }
+    const [links, msg] = buildXChain(cells, positions, digit);
+    if (msg.length > 0) {
+      return this.error(msg);
+    }
+    const [changed, msg2] = removeCandidatesByChains(cells, links);
+    if (!changed) {
+      return this.error(msg2);
+    }
+    cleanAllCellsSelected(cells);
+    return ok({ ...schema, cells });
+  }
+}
+
+class GroupedXChainCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'groupedxchain',
+      aliases: ['gxc'],
+      category: 'fill',
+      description: '同数群链',
+      args: [
+        {
+          type: 'digit',
+          name: 'd',
+          description: '数字',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos',
+          description: '行+列+行+列（如 12, 32）',
+          repeatable: true,
+        },
+      ],
+      examples: ['gxc 1 1234 5671'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    const digit = toDigit(args[0]);
+    cleanAllCellsHighlighted(cells);
+    setDigitHighlighted(cells, digit);
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
+    cleanAllCellsSelected(cells);
+    const positions: Position[][] = [];
+    for (const arg of args.slice(1)) {
+      if (arg.length === 0) {
+        return this.error();
+      }
+      const group: Position[] = [];
+      for (let i = 0; i < arg.length; i += 2) {
+        const row = toRow(arg[i]);
+        if (i + 1 >= arg.length) {
+          setRowSelected(cells, row);
+          return intermediate({ ...schema, cells });
+        }
+        const col = toCol(arg[i + 1]);
+        setCellSelected(cells[row][col]);
+        group.push({ row, col, box: getBoxIndex(row, col) });
+      }
+      positions.push(group);
+    }
+    const [links, msg] = buildChain(
+      cells,
+      positions,
+      positions.map((_) => digit)
+    );
+    if (msg.length > 0) {
+      return this.error(msg);
+    }
+    const [changed, msg2] = removeCandidatesByChains(cells, links);
+    if (!changed) {
+      return this.error(msg2);
+    }
+    cleanAllCellsSelected(cells);
+    return ok({ ...schema, cells });
+  }
+}
+
 // ============================================================================
 // 导出
 // ============================================================================
@@ -328,6 +470,8 @@ const fillLastDigitInColCmd = new FillLastDigitInColCommand();
 const fillLastDigitInBoxCmd = new FillLastDigitInBoxCommand();
 const groupedDigitInBoxRowCmd = new GroupedDigitInBoxRowCommand();
 const groupedDigitInBoxColCmd = new GroupedDigitInBoxColCommand();
+const xChainCmd = new XChainCommand();
+const groupXChainCmd = new GroupedXChainCommand();
 
 export {
   fillLastCandidateAutoCmd,
@@ -337,6 +481,8 @@ export {
   fillLastDigitInBoxCmd,
   groupedDigitInBoxRowCmd,
   groupedDigitInBoxColCmd,
+  xChainCmd,
+  groupXChainCmd,
 };
 
 export const fillCommands = {
@@ -367,5 +513,13 @@ export const fillCommands = {
   [groupedDigitInBoxColCmd.name]: {
     meta: groupedDigitInBoxColCmd.getMeta(),
     handler: groupedDigitInBoxColCmd.handle.bind(groupedDigitInBoxColCmd),
+  },
+  [xChainCmd.name]: {
+    meta: xChainCmd.getMeta(),
+    handler: xChainCmd.handle.bind(xChainCmd),
+  },
+  [groupXChainCmd.name]: {
+    meta: groupXChainCmd.getMeta(),
+    handler: groupXChainCmd.handle.bind(groupXChainCmd),
   },
 };

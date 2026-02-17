@@ -174,6 +174,9 @@ export function fillCandidates(cells: Cell[][], row: number, col: number) {
   }
   cells[row][col].candidates = candidates;
 }
+export function removeCandidate(cell: Cell, digit: Digit) {
+  cell.candidates = cell.candidates?.filter((c) => c.digit !== digit);
+}
 
 // 设置数值并且移除冲突的后续数
 // 不安全，做题的时候，请不要直接使用它
@@ -193,13 +196,5 @@ export function setCell(cells: Cell[][], row: number, col: number, digit: Digit)
   cells[row][col].candidates = null;
   cells[row][col].digit = digit;
   cells[row][col].hasConflict = hasConflict;
-  return true;
-}
-
-export function removeCandidate(cells: Cell[][], row: number, col: number, digit: Digit): boolean {
-  if (!cells[row][col].candidates || !hasCandidate(cells[row][col], digit)) {
-    return false;
-  }
-  cells[row][col].candidates = cells[row][col].candidates?.filter((c) => c.digit !== digit);
   return true;
 }

@@ -1,5 +1,12 @@
-import { getBoxCells, hasCandidate, hasDigit } from './basic';
-import { Cell, Digit, Position, SuperLink } from './types';
+import {
+  getBoxCells,
+  getBoxIndex,
+  getRelatedPositions,
+  hasCandidate,
+  hasDigit,
+  removeCandidate,
+} from './basic';
+import { Cell, Digit, LinkEndpoint, Position, SuperLink, SuperLinkEndpoint } from './types';
 
 export function isStrongLink(
   cells: Cell[][],
@@ -125,6 +132,7 @@ export function normalizePositions(
     positionSet.add(code);
     newPositions.push(position);
   }
+  newPositions.sort((a, b) => a.row * 9 + a.col - b.row * 9 - b.col);
   return newPositions;
 }
 
@@ -309,7 +317,10 @@ export function isSuperLink(
       return 0;
     }
   }
-  const normPositions2 = normalizePositions(positions2, normPositions1);
+  const normPositions2 =
+    digit1 == digit2
+      ? normalizePositions(positions2, normPositions1)
+      : normalizePositions(positions2);
   if (normPositions2.length === 0) {
     return 0;
   }
@@ -401,6 +412,18 @@ export function isSuperLink(
   return 0;
 }
 
+export function buildXChain(
+  cells: Cell[][],
+  positions: Position[],
+  digit: Digit
+): [SuperLink[], string] {
+  return buildChain(
+    cells,
+    positions.map((pos) => [pos]),
+    positions.map((pos) => digit)
+  );
+}
+
 export function buildChain(
   cells: Cell[][],
   positions: Position[][],
@@ -434,6 +457,142 @@ export function buildChain(
   return [links, ''];
 }
 
-export function excludeCandidateByChain(cells: Cell[][], links: SuperLink[]): boolean {
-  return false;
+export function getCommonRelatedPositions(positions: Position[]): Position[] {
+  let commonRelatedPositionSet: Set<number> = new Set();
+  for (const position of positions) {
+    const relations = new Set(
+      getRelatedPositions(position.row, position.col).map((pos) => pos.row * 10 + pos.col)
+    );
+    commonRelatedPositionSet = new Set(
+      [...commonRelatedPositionSet].filter((pos) => relations.has(pos))
+    );
+  }
+  return [...commonRelatedPositionSet].map((value) => ({
+    row: Math.floor(value / 10),
+    col: value % 10,
+    box: getBoxIndex(Math.floor(value / 10), value % 10),
+  }));
+}
+
+export function getCommonRelatedCells(cells: Cell[][], positions: Position[]): Cell[] {
+  return getCommonRelatedPositions(positions).map((pos) => cells[pos.row][pos.col]);
+}
+
+function removeChainCandidateByEndpoint(
+  cells: Cell[][],
+  head: SuperLinkEndpoint,
+  tail: SuperLinkEndpoint
+): [boolean, string] {
+  if (head.digit !== tail.digit) {
+    // 异数链，如果在同一格
+    if (head.positions.length !== 1 || tail.positions.length !== 1) {
+      return [false, '异数链首尾不支持多格'];
+    }
+    if (positionEq(head.positions[0], tail.positions[0])) {
+      // 异数链在同一格
+      const cell = cells[head.positions[0].row][head.positions[0].col];
+      const changed = cell.candidates?.length > 2;
+      if (!changed) {
+        return [false, '异数链没有候选数可删'];
+      }
+      cell.candidates?.filter((c) => c.digit !== head.digit && c.digit !== tail.digit);
+    } else {
+      // 异数链不在同一格
+      const headCell = cells[head.positions[0].row][head.positions[0].col];
+      const tailCell = cells[head.positions[0].row][head.positions[0].col];
+      let changed = false;
+      if (hasCandidate(headCell, tail.digit)) {
+        removeCandidate(headCell, tail.digit);
+        changed = true;
+      }
+      if (hasCandidate(tailCell, head.digit)) {
+        removeCandidate(tailCell, head.digit);
+        changed = true;
+      }
+      if (!changed) {
+        return [false, `没有候选数可删除`];
+      }
+    }
+    return [true, ''];
+  }
+  // 同数链，必定不在同一格
+  const commonPositions = getCommonRelatedPositions([...head.positions, ...tail.positions]);
+  const digit = head.digit;
+  let changed = false;
+  for (const position of commonPositions) {
+    const cell = cells[position.row][position.col];
+    if (hasCandidate(cell, head.digit)) {
+      removeCandidate(cell, digit);
+      changed = true;
+    }
+  }
+  if (!changed) {
+    return [false, '没有移除的候选数'];
+  }
+  return [true, ''];
+}
+
+export function removeCandidatesByChains(cells: Cell[][], links: SuperLink[]): [boolean, string] {
+  // links is build by buildChain, so we don't need to check link's internal conditions.
+  // check weak-strong condition first (external condition)
+  if (links.length % 2 === 0) {
+    return [false, '强链开始强链结束，所以强弱链总数必须为奇数'];
+  }
+  for (let i = 0; i < links.length - 1; i++) {
+    const link = links[i];
+    const mustBeStrong = i % 2 === 0;
+    if (mustBeStrong && !link.isStrong) {
+      return [
+        false,
+        `弱链(${link.from.positions}:${link.from.digit})和(${link.to.positions}:${link.to.digit})不能成强链`,
+      ];
+    }
+  }
+  const head = links[0].from;
+  const tail = links[links.length - 1].to;
+  if (isSuperLink(cells, head.positions, head.digit, tail.positions, tail.digit) > 0) {
+    // 数环
+    // 需要找到第一个弱链
+    let weakLinkIndex = -1;
+    for (let i = 0; i < links.length - 1; i++) {
+      if (!links[i].isStrong) {
+        weakLinkIndex = i;
+        break;
+      }
+    }
+    if (weakLinkIndex === -1) {
+      // 任何链都能当做弱链
+      let totalChanged = false;
+      let totalMsg = '';
+      for (let i = 0; i < links.length - 1; i += 2) {
+        const link = links[i];
+        const [changed, msg] = removeChainCandidateByEndpoint(cells, link.from, link.to);
+        if (changed) {
+          totalChanged = true;
+        } else {
+          totalMsg += '\n' + msg;
+        }
+      }
+      return totalChanged ? [true, totalMsg] : [false, ''];
+    } else {
+      // 每隔一个就是一个弱链
+      let totalChanged = false;
+      let totalMsg = '';
+      for (; weakLinkIndex < links.length - 1; weakLinkIndex += 2) {
+        const link = links[weakLinkIndex];
+        const [changed, msg] = removeChainCandidateByEndpoint(cells, link.from, link.to);
+        if (changed) {
+          totalChanged = true;
+        } else {
+          totalMsg += '\n' + msg;
+        }
+      }
+      return totalChanged ? [true, ''] : [totalChanged, totalMsg];
+    }
+  }
+  const [changed, msg] = removeChainCandidateByEndpoint(cells, head, tail);
+  if (!changed) {
+    return [false, msg];
+  }
+  return [true, ''];
 }

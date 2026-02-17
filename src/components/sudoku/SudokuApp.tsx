@@ -5,7 +5,7 @@ import { useSudokuState } from '@/hooks/useSudokuState';
 import { Position, Digit, SudokuSchema } from '@/lib/sudoku';
 
 export const SudokuApp: React.FC = () => {
-  const { schema, selectCell, setCellValue, toggleCornerCandidate, clearCell, replaceSchema } =
+  const { schema, selectCell, setCellValue, clearCell, replaceSchema } =
     useSudokuState();
 
   const [selectedCell, setSelectedCell] = React.useState<Position | null>(null);
