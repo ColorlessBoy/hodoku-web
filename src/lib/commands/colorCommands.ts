@@ -106,7 +106,6 @@ class ColorRowCandidateCmd extends BaseCommand {
       if (arg.length === 2) {
         cleanAllCellsSelected(cells);
         setRowSelected(cells, row);
-        console.log('colorRowCandidate', row, digit);
         setDigitSelected(cells, digit, true, true);
         return intermediate({ ...schema, cells });
       }

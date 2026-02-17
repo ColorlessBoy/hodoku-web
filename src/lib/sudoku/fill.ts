@@ -1,5 +1,12 @@
 import type { Digit, Cell } from './types';
-import { getBoxCells, getBoxIndex, hasCandidate, hasDigit, setCell } from './basic';
+import {
+  getBoxCells,
+  getBoxIndex,
+  hasCandidate,
+  hasDigit,
+  removeCandidates,
+  setCell,
+} from './basic';
 export function fillLastCandidateAuto(cells: Cell[][]): boolean {
   let changed = false;
   for (let i = 0; i < 81; i++) {
@@ -240,4 +247,133 @@ export function groupedDigitInBoxCol(
     }
   }
   return true;
+}
+
+export function fillGroupedDigitsInRow(cells: Cell[][], row: number, digits: Digit[]): boolean {
+  const cols: Set<number> = new Set();
+  const setOfDigits = [...new Set(digits)];
+  const reversedCols: Set<number> = new Set();
+  const reversedSetOfDigits = [];
+  for (let d = 1; d <= 9; d++) {
+    if (!setOfDigits.includes(d as Digit)) {
+      reversedSetOfDigits.push(d as Digit);
+    }
+  }
+  if (setOfDigits.length <= 1) {
+    return false;
+  }
+  for (let col = 0; col < cells.length; col++) {
+    const cell = cells[row][col];
+    if (setOfDigits.some((d) => hasDigit(cell, d))) {
+      cols.add(col);
+    }
+    if (reversedSetOfDigits.some((d) => hasDigit(cell, d))) {
+      reversedCols.add(col);
+    }
+  }
+  if (cols.size === setOfDigits.length) {
+    // hidden digit group
+    for (const col of cols) {
+      const cell = cells[row][col];
+      removeCandidates(cell, reversedSetOfDigits);
+    }
+    return true;
+  } else if (reversedCols.size === reversedSetOfDigits.length) {
+    // naked digit group
+    for (const col of reversedCols) {
+      const cell = cells[row][col];
+      removeCandidates(cell, setOfDigits);
+    }
+    return true;
+  }
+  return false;
+}
+
+export function fillGroupedDigitsInCol(cells: Cell[][], col: number, digits: Digit[]): boolean {
+  const rows: Set<number> = new Set();
+  const setOfDigits = [...new Set(digits)];
+  const reversedRows = [];
+  const reversedSetOfDigits = [];
+  for (let d = 1; d <= 9; d++) {
+    if (!setOfDigits.includes(d as Digit)) {
+      reversedSetOfDigits.push(d as Digit);
+    }
+  }
+  if (setOfDigits.length <= 1) {
+    return false;
+  }
+  for (let row = 0; row < cells.length; row++) {
+    const cell = cells[row][col];
+    if (setOfDigits.some((d) => hasDigit(cell, d))) {
+      rows.add(row);
+    }
+    if (reversedSetOfDigits.some((d) => hasDigit(cell, d))) {
+      reversedRows.push(row);
+    }
+  }
+  if (rows.size === setOfDigits.length) {
+    // hidden group digits
+    for (const row of rows) {
+      removeCandidates(cells[row][col], reversedSetOfDigits);
+    }
+    return true;
+  } else if (reversedRows.length === reversedSetOfDigits.length) {
+    // naked group digits
+    // 移除其他数字
+    for (const row of reversedRows) {
+      removeCandidates(cells[row][col], setOfDigits);
+    }
+    return true;
+  }
+  return false;
+}
+
+export function fillGroupedDigitsInBox(cells: Cell[][], box: number, digits: Digit[]) {
+  const cellsInBox = getBoxCells(cells, box);
+  const setOfDigits = [...new Set(digits)];
+  const positions: Set<number> = new Set();
+  const reversedPositions: Set<number> = new Set();
+  const reversedSetOfDigits = [];
+  for (let d = 1; d <= 9; d++) {
+    if (!setOfDigits.includes(d as Digit)) {
+      reversedSetOfDigits.push(d as Digit);
+    }
+  }
+
+  if (setOfDigits.length <= 1) {
+    return false;
+  }
+  for (const cell of cellsInBox) {
+    if (setOfDigits.some((d) => hasDigit(cell, d))) {
+      positions.add(cell.position.row * 9 + cell.position.col);
+    }
+    if (reversedSetOfDigits.some((d) => hasDigit(cell, d))) {
+      reversedPositions.add(cell.position.row * 9 + cell.position.col);
+    }
+  }
+  if (positions.size === setOfDigits.length) {
+    console.log('box hidden group digits', box, setOfDigits);
+    // hidden group digits
+    // 移除其他数字
+    for (const pos of positions) {
+      const row = Math.floor(pos / 9);
+      const col = pos % 9;
+      const cell = cells[row][col];
+      removeCandidates(cell, setOfDigits);
+    }
+    return true;
+  }
+  if (reversedPositions.size === reversedSetOfDigits.length) {
+    console.log('box naked group digits', box, setOfDigits);
+    // naked group digits
+    // 移除其他数字
+    for (const pos of reversedPositions) {
+      const row = Math.floor(pos / 9);
+      const col = pos % 9;
+      const cell = cells[row][col];
+      removeCandidates(cell, setOfDigits);
+    }
+    return true;
+  }
+  return false;
 }

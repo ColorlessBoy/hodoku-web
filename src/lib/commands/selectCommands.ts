@@ -190,7 +190,6 @@ class SelectXYCmd extends BaseCommand {
   execute(schema: SudokuSchema): CmdResult {
     let changed = false;
     const cells = cloneCells(schema.cells);
-    console.log('SelectXYCmd');
     if (setXYSelected(cells)) {
       changed = true;
     }
@@ -307,7 +306,7 @@ class JoinSelectBoxCmd extends BaseCommand {
 class JoinSelectDigitCmd extends BaseCommand {
   constructor() {
     super({
-      name: 'sjd',
+      name: 'sdj',
       aliases: ['sj'],
       category: 'select',
       description: '合并选择数字',

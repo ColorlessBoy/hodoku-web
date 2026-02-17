@@ -178,6 +178,10 @@ export function removeCandidate(cell: Cell, digit: Digit) {
   cell.candidates = cell.candidates?.filter((c) => c.digit !== digit);
 }
 
+export function removeCandidates(cell: Cell, digits: Digit[]) {
+  cell.candidates = cell.candidates?.filter((c) => !digits.includes(c.digit));
+}
+
 // 设置数值并且移除冲突的后续数
 // 不安全，做题的时候，请不要直接使用它
 export function setCell(cells: Cell[][], row: number, col: number, digit: Digit): boolean {

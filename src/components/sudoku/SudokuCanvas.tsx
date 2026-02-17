@@ -219,7 +219,6 @@ function drawCell(
 ) {
   // 背景色优先级：冲突 > 染色 > 选中 > 同值 > 相关 > 高亮 > 默认
   let bgColor = colors.cellBg;
-  console.log('cell', cell);
 
   if (cell.hasConflict) {
     bgColor = colors.errorBg;

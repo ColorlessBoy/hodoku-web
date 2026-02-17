@@ -230,7 +230,6 @@ export function setXYSelected(
       for (let c = 0; c < 9; c++) {
         const cell = cells[r][c];
         if (cell.candidates?.length === 2) {
-          console.log(`setXYSelected: ${r}, ${c}`);
           if (setCellSelected(cell, selected)) {
             changed = true;
           }
