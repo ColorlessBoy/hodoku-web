@@ -48,6 +48,13 @@ export function getRelatedCells(cells: Cell[][], row: number, col: number): Cell
   return getRelatedPositions(row, col).map((pos) => cells[pos.row][pos.col]);
 }
 
+export function isRelated(position1: Position, position2: Position): boolean {
+  if (position1.row === position2.row && position1.col === position2.col) {
+    return false;
+  }
+  return position1.row === position2.row || position1.col === position2.col || position1.box === position2.box;
+}
+
 export function cloneCells(cells: Cell[][]): Cell[][] {
   return cells.map((row) =>
     row.map((cell) => ({

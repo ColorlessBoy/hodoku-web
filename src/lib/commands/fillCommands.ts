@@ -32,9 +32,11 @@ import {
   buildChain,
   buildXChain,
   removeCandidatesByChains,
+  WeakXYWings,
   WWingsInBox,
   WWingsInCol,
   WWingsInRow,
+  XYWings,
 } from '../sudoku/link';
 
 // ============================================================================
@@ -642,6 +644,158 @@ class WWingsInBoxCommand extends BaseCommand {
   }
 }
 
+class XYWingsCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'xywing',
+      aliases: ['xyw'],
+      category: 'fill',
+      description: 'XY翼',
+      args: [
+        {
+          type: 'pos',
+          name: 'x',
+          description: '行+列',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'y',
+          description: '行+列',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'z',
+          description: '行+列',
+          repeatable: false,
+        },
+      ],
+      examples: ['xy  12 27 74'],
+    });
+  }
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    cleanAllCellsSelected(cells);
+    const xrow = toRow(args[0][0]);
+    if (args[0].length === 1) {
+      setRowSelected(cells, xrow);
+      return intermediate({ ...schema, cells });
+    }
+    const xcol = toCol(args[0][1]);
+    setCellSelected(cells[xrow][xcol]);
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
+    const yrow = toRow(args[1][0]);
+    if (args[1].length === 1) {
+      setRowSelected(cells, yrow);
+      return intermediate({ ...schema, cells });
+    }
+    const ycol = toCol(args[1][1]);
+    setCellSelected(cells[yrow][ycol]);
+    if (args.length === 2) {
+      return intermediate({ ...schema, cells });
+    }
+    const zrow = toRow(args[2][0]);
+    if (args[2].length === 1) {
+      setRowSelected(cells, zrow);
+      return intermediate({ ...schema, cells });
+    }
+    const zcol = toCol(args[2][1]);
+    setCellSelected(cells[zrow][zcol]);
+    const [isSuccess, msg] = XYWings(
+      cells,
+      { row: xrow, col: xcol, box: getBoxIndex(xrow, xcol) },
+      { row: yrow, col: ycol, box: getBoxIndex(yrow, ycol) },
+      { row: zrow, col: zcol, box: getBoxIndex(zrow, zcol) }
+    );
+    if (!isSuccess) {
+      return this.error(msg);
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
+class WeakXYWingsCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'weakxywing',
+      aliases: ['wxyw'],
+      category: 'fill',
+      description: '弱化XY翼',
+      args: [
+        {
+          type: 'pos',
+          name: 'x',
+          description: '行+列',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'y',
+          description: '行+列',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'z',
+          description: '行+列',
+          repeatable: false,
+        },
+      ],
+      examples: ['wxyw 12 27 74'],
+    });
+  }
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    cleanAllCellsSelected(cells);
+    const xrow = toRow(args[0][0]);
+    if (args[0].length === 1) {
+      setRowSelected(cells, xrow);
+      return intermediate({ ...schema, cells });
+    }
+    const xcol = toCol(args[0][1]);
+    setCellSelected(cells[xrow][xcol]);
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
+    const yrow = toRow(args[1][0]);
+    if (args[1].length === 1) {
+      setRowSelected(cells, yrow);
+      return intermediate({ ...schema, cells });
+    }
+    const ycol = toCol(args[1][1]);
+    setCellSelected(cells[yrow][ycol]);
+    if (args.length === 2) {
+      return intermediate({ ...schema, cells });
+    }
+    const zrow = toRow(args[2][0]);
+    if (args[2].length === 1) {
+      setRowSelected(cells, zrow);
+      return intermediate({ ...schema, cells });
+    }
+    const zcol = toCol(args[2][1]);
+    setCellSelected(cells[zrow][zcol]);
+    const [isSuccess, msg] = WeakXYWings(
+      cells,
+      { row: xrow, col: xcol, box: getBoxIndex(xrow, xcol) },
+      { row: yrow, col: ycol, box: getBoxIndex(yrow, ycol) },
+      { row: zrow, col: zcol, box: getBoxIndex(zrow, zcol) }
+    );
+    if (!isSuccess) {
+      return this.error(msg);
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
 // ============================================================================
 // 导出
 // ============================================================================
@@ -656,6 +810,8 @@ const groupXChainCmd = new GroupedXChainCommand();
 const wWingsInRowCmd = new WWingsInRowCommand();
 const wWingsInColCmd = new WWingsInColCommand();
 const wWingsInBoxCmd = new WWingsInBoxCommand();
+const xyWingCmd = new XYWingsCommand();
+const weakXYWingCmd = new WeakXYWingsCommand();
 
 export {
   fillLastCandidateAutoCmd,
@@ -668,6 +824,8 @@ export {
   wWingsInRowCmd,
   wWingsInColCmd,
   wWingsInBoxCmd,
+  xyWingCmd,
+  weakXYWingCmd,
 };
 
 export const fillCommands = {
@@ -710,5 +868,13 @@ export const fillCommands = {
   [wWingsInBoxCmd.name]: {
     meta: wWingsInBoxCmd.getMeta(),
     handler: wWingsInBoxCmd.handle.bind(wWingsInBoxCmd),
+  },
+  [xyWingCmd.name]: {
+    meta: xyWingCmd.getMeta(),
+    handler: xyWingCmd.handle.bind(xyWingCmd),
+  },
+  [weakXYWingCmd.name]: {
+    meta: weakXYWingCmd.getMeta(),
+    handler: weakXYWingCmd.handle.bind(weakXYWingCmd),
   },
 };

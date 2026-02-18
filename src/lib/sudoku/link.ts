@@ -5,7 +5,9 @@ import {
   getRelatedPositions,
   hasCandidate,
   hasDigit,
+  isRelated,
   removeCandidate,
+  removeCandidates,
 } from './basic';
 import { Cell, Digit, LinkEndpoint, Position, SuperLink, SuperLinkEndpoint } from './types';
 
@@ -462,7 +464,9 @@ export function getCommonRelatedPositions(positions: Position[]): Position[] {
   if (positions.length === 0) {
     return [];
   }
-  let commonRelatedPositionSet: Set<number> = new Set(getRelatedPositions(positions[0].row, positions[0].col).map((p) => p.row * 9 + p.col));
+  let commonRelatedPositionSet: Set<number> = new Set(
+    getRelatedPositions(positions[0].row, positions[0].col).map((p) => p.row * 9 + p.col)
+  );
   for (const position of positions.slice(1)) {
     const relations = new Set(
       getRelatedPositions(position.row, position.col).map((pos) => pos.row * 9 + pos.col)
@@ -848,4 +852,201 @@ export function WWingsInBox(
     }
   }
   return [false, '不是有效的W-Wings'];
+}
+
+export function XYWings(
+  cells: Cell[][],
+  position1: Position,
+  position2: Position,
+  position3: Position
+): [boolean, string] {
+  const cell1 = cells[position1.row][position1.col];
+  const cell2 = cells[position2.row][position2.col];
+  const cell3 = cells[position3.row][position3.col];
+  if (
+    cell1.candidates?.length !== 2 ||
+    cell2.candidates?.length !== 2 ||
+    cell3.candidates?.length !== 2
+  ) {
+    return [false, 'XYWings需要每个格子2个候选数'];
+  }
+  const unionCandidates12 = new Set([
+    ...cell1.candidates.map((c) => c.digit),
+    ...cell2.candidates.map((c) => c.digit),
+  ]);
+  if (unionCandidates12.size !== 3) {
+    return [false, 'XYWings的1、2格子候选数并集必需是3个候选数'];
+  }
+  const unionCandidates23 = new Set([
+    ...cell2.candidates.map((c) => c.digit),
+    ...cell3.candidates.map((c) => c.digit),
+  ]);
+  if (unionCandidates23.size !== 3) {
+    return [false, 'XYWings的1、3格子候选数并集必需是3个候选数'];
+  }
+  const unionCandidates13 = new Set([
+    ...cell1.candidates.map((c) => c.digit),
+    ...cell3.candidates.map((c) => c.digit),
+  ]);
+  if (unionCandidates13.size !== 3) {
+    return [false, 'XYWings的1、3格子候选数并集必需是3个候选数'];
+  }
+  const unionCandidates123 = new Set([
+    ...cell1.candidates.map((c) => c.digit),
+    ...cell2.candidates.map((c) => c.digit),
+    ...cell3.candidates.map((c) => c.digit),
+  ]);
+  if (unionCandidates123.size !== 3) {
+    return [false, 'XYWings的1、2、3格子候选数并集必需是3个候选数'];
+  }
+  const isRelated12 = isRelated(position1, position2);
+  const isRelated23 = isRelated(position2, position3);
+  const isRelated13 = isRelated(position1, position3);
+  if (isRelated12 && isRelated23 && isRelated13) {
+    // naked triple
+    const relatedPositions1 = getRelatedPositions(position1.row, position1.col);
+    const relatedPositions2 = getRelatedPositions(position2.row, position2.col);
+    const relatedPositions3 = getRelatedPositions(position3.row, position3.col);
+    const relatedPositions = relatedPositions1.filter(
+      (pos) => relatedPositions2.includes(pos) && relatedPositions3.includes(pos)
+    );
+    if (relatedPositions.length >= 0) {
+      let changed = false;
+      for (const pos of relatedPositions) {
+        const preCnt = cells[pos.row][pos.col].candidates?.length || 0;
+        removeCandidates(cells[pos.row][pos.col], [...unionCandidates123]);
+        if (preCnt !== cells[pos.row][pos.col].candidates?.length || 0) {
+          changed = true;
+        }
+      }
+      if (changed) {
+        return [true, ''];
+      }
+    }
+    return [false, '裸三数对，没有有效的候选数被删除'];
+  }
+  let relationShipCnt = 0;
+  if (isRelated12) {
+    relationShipCnt++;
+  }
+  if (isRelated23) {
+    relationShipCnt++;
+  }
+  if (isRelated13) {
+    relationShipCnt++;
+  }
+  if (relationShipCnt !== 2) {
+    return [false, 'XY-Wings需要有2对弱关系'];
+  }
+  let wingCell1 = cell1;
+  let wingCell2 = cell2;
+  if (!isRelated23) {
+    wingCell1 = cell3;
+  } else if (!isRelated13) {
+    wingCell2 = cell3;
+  }
+
+  const digit = wingCell1.candidates.filter((c) =>
+    wingCell2.candidates.some((c2) => c2.digit === c.digit)
+  )[0].digit;
+  if (
+    removeChainCandidateByEndpoint(
+      cells,
+      { positions: [wingCell1.position], digit },
+      { positions: [wingCell2.position], digit }
+    )
+  ) {
+    return [true, ''];
+  }
+  return [false, '没有有效的候选数被删除'];
+}
+
+export function WeakXYWings(
+  cells: Cell[][],
+  position1: Position,
+  position2: Position,
+  position3: Position
+): [boolean, string] {
+  const cell1 = cells[position1.row][position1.col];
+  const cell2 = cells[position2.row][position2.col];
+  const cell3 = cells[position3.row][position3.col];
+  const cell3s = [cell1, cell2, cell3];
+  let count3 = 0;
+  let rootCellIndex = -1;
+  let count2 = 0;
+  for (const [index, cell] of cell3s.entries()) {
+    if (cell.candidates?.length === 3) {
+      count3++;
+      rootCellIndex = index;
+    }
+    if (cell.candidates?.length === 2) {
+      count2++;
+    }
+  }
+  if (count3 !== 1 || count2 !== 2) {
+    return [false, 'Weak-XY-Wing 需要一个格子满足3个候选数，两个格子满足2个候选数'];
+  }
+  const wingCells = cell3s.filter((_, index) => index !== rootCellIndex);
+  const rootCell = cell3s[rootCellIndex];
+  const wingCandidates = new Set([
+    ...wingCells[0].candidates!.map((c) => c.digit),
+    ...wingCells[1].candidates!.map((c) => c.digit),
+  ]);
+  if (wingCandidates.size !== 3) {
+    return [false, 'Weak-XY-Wing 需要两个翼候选数并集是3个候选数'];
+  }
+  const totalCandidates = new Set([...wingCandidates, ...rootCell.candidates!.map((c) => c.digit)]);
+  if (totalCandidates.size !== 3) {
+    return [false, 'Weak-XY-Wing 需要三个格子的候选数并集是3个候选数'];
+  }
+  console.log('WeakXYWings', { rootCell, wingCells });
+  const isRelated12 = isRelated(rootCell.position!, wingCells[0].position!);
+  const isRelated13 = isRelated(rootCell.position!, wingCells[1].position!);
+  const isRelated23 = isRelated(wingCells[0].position!, wingCells[1].position!);
+  const relatedPositions1 = getRelatedPositions(position1.row, position1.col);
+  const relatedPositions2 = getRelatedPositions(position2.row, position2.col);
+  const relatedPositions3 = getRelatedPositions(position3.row, position3.col);
+  const relatedPositions = relatedPositions1.filter(
+    (pos) => relatedPositions2.some(p => p.row === pos.row && p.col === pos.col) && relatedPositions3.some(p => p.row === pos.row && p.col === pos.col)
+  );
+  if (isRelated12 && isRelated13 && isRelated23) {
+    // naked triple
+    if (relatedPositions.length >= 0) {
+      let changed = false;
+      for (const pos of relatedPositions) {
+        const preCnt = cells[pos.row][pos.col].candidates?.length || 0;
+        removeCandidates(cells[pos.row][pos.col], [...totalCandidates]);
+        if (preCnt !== cells[pos.row][pos.col].candidates?.length || 0) {
+          changed = true;
+        }
+      }
+      if (changed) {
+        return [true, ''];
+      }
+    }
+    return [false, '裸三数对，没有有效的候选数被删除'];
+  }
+  if (!isRelated12 || !isRelated13) {
+    return [false, 'Weak-XY-Wing 需要两个翼格子分别和根节点处于弱关系'];
+  }
+  const digit = rootCell.candidates!.filter(
+    (c) =>
+      wingCells[0].candidates?.some((c2) => c2.digit === c.digit) &&
+      wingCells[1].candidates?.some((c2) => c2.digit === c.digit)
+  )[0].digit;
+  console.log('WeakXyWings', {digit, relatedPositions})
+  if (relatedPositions.length >= 0) {
+    let changed = false;
+    for (const pos of relatedPositions) {
+      const preCnt = cells[pos.row][pos.col].candidates?.length || 0;
+      removeCandidates(cells[pos.row][pos.col], [digit]);
+      if (preCnt !== cells[pos.row][pos.col].candidates?.length || 0) {
+        changed = true;
+      }
+    }
+    if (changed) {
+      return [true, ''];
+    }
+  }
+  return [false, 'Weak-XY-Wings 没有有效的候选数被删除'];
 }
