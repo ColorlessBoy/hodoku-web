@@ -1,6 +1,7 @@
 import {
   getBoxCells,
   getBoxIndex,
+  getRelatedCells,
   getRelatedPositions,
   hasCandidate,
   hasDigit,
@@ -458,19 +459,22 @@ export function buildChain(
 }
 
 export function getCommonRelatedPositions(positions: Position[]): Position[] {
-  let commonRelatedPositionSet: Set<number> = new Set();
-  for (const position of positions) {
+  if (positions.length === 0) {
+    return [];
+  }
+  let commonRelatedPositionSet: Set<number> = new Set(getRelatedPositions(positions[0].row, positions[0].col).map((p) => p.row * 9 + p.col));
+  for (const position of positions.slice(1)) {
     const relations = new Set(
-      getRelatedPositions(position.row, position.col).map((pos) => pos.row * 10 + pos.col)
+      getRelatedPositions(position.row, position.col).map((pos) => pos.row * 9 + pos.col)
     );
     commonRelatedPositionSet = new Set(
       [...commonRelatedPositionSet].filter((pos) => relations.has(pos))
     );
   }
   return [...commonRelatedPositionSet].map((value) => ({
-    row: Math.floor(value / 10),
-    col: value % 10,
-    box: getBoxIndex(Math.floor(value / 10), value % 10),
+    row: Math.floor(value / 9),
+    col: value % 9,
+    box: getBoxIndex(Math.floor(value / 9), value % 9),
   }));
 }
 
@@ -519,6 +523,7 @@ function removeChainCandidateByEndpoint(
   const commonPositions = getCommonRelatedPositions([...head.positions, ...tail.positions]);
   const digit = head.digit;
   let changed = false;
+  console.log('removeChangeCandidate same digit', head, tail, commonPositions);
   for (const position of commonPositions) {
     const cell = cells[position.row][position.col];
     if (hasCandidate(cell, head.digit)) {
@@ -595,4 +600,252 @@ export function removeCandidatesByChains(cells: Cell[][], links: SuperLink[]): [
     return [false, msg];
   }
   return [true, ''];
+}
+
+export function WWingsInRow(
+  cells: Cell[][],
+  digit: Digit,
+  row: number,
+  position1: Position,
+  position2: Position
+): [boolean, string] {
+  const cell1 = cells[position1.row][position1.col];
+  const cell2 = cells[position2.row][position2.col];
+  if (positionEq(position1, position2)) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) is equal to (${position2.row},${position2.col})`,
+    ];
+  }
+  if (position1.row === row) {
+    return [false, `(${position1.row},${position1.col}) should not in row ${row}`];
+  }
+  if (position2.row === row) {
+    return [false, `(${position2.row},${position2.col}) should not in row ${row}`];
+  }
+  if (cell1.candidates?.length !== 2) {
+    return [false, `(${position1.row},${position1.col}) candidates length is not 2`];
+  }
+  if (cell2.candidates?.length !== 2) {
+    return [false, `(${position2.row},${position2.col}) candidates length is not 2`];
+  }
+  const unionCandidates = new Set([
+    ...cell1.candidates.map((c) => c.digit),
+    ...cell2.candidates.map((c) => c.digit),
+  ]);
+  if (unionCandidates.size !== 2) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have same candidates`,
+    ];
+  }
+  if (!unionCandidates.has(digit)) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have digit ${digit}`,
+    ];
+  }
+  const relatedCells1OfDigit1 = getRelatedCells(cells, position1.row, position1.col).filter(
+    (c) => c.position.row === row && hasCandidate(c, digit)
+  );
+  const relatedCells2OfDigit1 = getRelatedCells(cells, position2.row, position2.col).filter(
+    (c) => c.position.row === row && hasCandidate(c, digit) && !relatedCells2OfDigit1.includes(c)
+  );
+
+  const digit2 = [...unionCandidates].filter((d) => d !== digit)[0];
+
+  if (
+    relatedCells1OfDigit1.length > 0 &&
+    relatedCells2OfDigit1.length > 0 &&
+    isSuperLink(
+      cells,
+      relatedCells1OfDigit1.map((c) => c.position),
+      digit,
+      relatedCells2OfDigit1.map((c) => c.position),
+      digit
+    ) === 2
+  ) {
+    if (
+      removeChainCandidateByEndpoint(
+        cells,
+        {
+          positions: [position1],
+          digit: digit2,
+        },
+        {
+          positions: [position2],
+          digit: digit2,
+        }
+      )
+    ) {
+      return [true, ''];
+    }
+  }
+  return [false, '不是有效的W-Wings'];
+}
+
+export function WWingsInCol(
+  cells: Cell[][],
+  digit: Digit,
+  col: number,
+  position1: Position,
+  position2: Position
+): [boolean, string] {
+  const cell1 = cells[position1.row][position1.col];
+  const cell2 = cells[position2.row][position2.col];
+  if (positionEq(position1, position2)) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) is equal to (${position2.row},${position2.col})`,
+    ];
+  }
+  if (position1.col === col) {
+    return [false, `(${position1.row},${position1.col}) should not in col ${col}`];
+  }
+  if (position2.col === col) {
+    return [false, `(${position2.row},${position2.col}) should not in col ${col}`];
+  }
+  if (cell1.candidates?.length !== 2) {
+    return [false, `(${position1.row},${position1.col}) candidates length is not 2`];
+  }
+  if (cell2.candidates?.length !== 2) {
+    return [false, `(${position2.row},${position2.col}) candidates length is not 2`];
+  }
+  const unionCandidates = new Set([
+    ...cell1.candidates.map((c) => c.digit),
+    ...cell2.candidates.map((c) => c.digit),
+  ]);
+  if (unionCandidates.size !== 2) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have same candidates`,
+    ];
+  }
+  if (!unionCandidates.has(digit)) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have digit ${digit}`,
+    ];
+  }
+  const relatedCells1OfDigit1 = getRelatedCells(cells, position1.row, position1.col).filter(
+    (c) => c.position.col === col && hasCandidate(c, digit)
+  );
+  const relatedCells2OfDigit1 = getRelatedCells(cells, position2.row, position2.col).filter(
+    (c) => c.position.col === col && hasCandidate(c, digit) && !relatedCells1OfDigit1.includes(c)
+  );
+
+  const digit2 = [...unionCandidates].filter((d) => d !== digit)[0];
+
+  if (
+    relatedCells1OfDigit1.length > 0 &&
+    relatedCells2OfDigit1.length > 0 &&
+    isSuperLink(
+      cells,
+      relatedCells1OfDigit1.map((c) => c.position),
+      digit,
+      relatedCells2OfDigit1.map((c) => c.position),
+      digit
+    ) === 2
+  ) {
+    if (
+      removeChainCandidateByEndpoint(
+        cells,
+        {
+          positions: [position1],
+          digit: digit2,
+        },
+        {
+          positions: [position2],
+          digit: digit2,
+        }
+      )
+    ) {
+      return [true, ''];
+    }
+  }
+  return [false, '不是有效的W-Wings'];
+}
+
+export function WWingsInBox(
+  cells: Cell[][],
+  digit: Digit,
+  box: number,
+  position1: Position,
+  position2: Position
+): [boolean, string] {
+  const cell1 = cells[position1.row][position1.col];
+  const cell2 = cells[position2.row][position2.col];
+  if (positionEq(position1, position2)) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) is equal to (${position2.row},${position2.col})`,
+    ];
+  }
+  if (position1.box === box) {
+    return [false, `(${position1.row},${position1.col}) should not in box ${box}`];
+  }
+  if (position2.box === box) {
+    return [false, `(${position2.row},${position2.col}) should not in box ${box}`];
+  }
+  if (cell1.candidates?.length !== 2) {
+    return [false, `(${position1.row},${position1.col}) candidates length is not 2`];
+  }
+  if (cell2.candidates?.length !== 2) {
+    return [false, `(${position2.row},${position2.col}) candidates length is not 2`];
+  }
+  const unionCandidates = new Set([
+    ...cell1.candidates.map((c) => c.digit),
+    ...cell2.candidates.map((c) => c.digit),
+  ]);
+  if (unionCandidates.size !== 2) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have same candidates`,
+    ];
+  }
+  if (!unionCandidates.has(digit)) {
+    return [
+      false,
+      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have digit ${digit}`,
+    ];
+  }
+  const relatedCells1OfDigit1 = getRelatedCells(cells, position1.row, position1.col).filter(
+    (c) => c.position.box === box && hasCandidate(c, digit)
+  );
+  const relatedCells2OfDigit1 = getRelatedCells(cells, position2.row, position2.col).filter(
+    (c) => c.position.box === box && hasCandidate(c, digit) && !relatedCells1OfDigit1.includes(c)
+  );
+
+  console.log('WWingsInBox', relatedCells1OfDigit1, relatedCells2OfDigit1);
+
+  const digit2 = [...unionCandidates].filter((d) => d !== digit)[0];
+
+  if (
+    relatedCells1OfDigit1.length > 0 &&
+    relatedCells2OfDigit1.length > 0 &&
+    isSuperLink(
+      cells,
+      relatedCells1OfDigit1.map((c) => c.position),
+      digit,
+      relatedCells2OfDigit1.map((c) => c.position),
+      digit
+    ) === 2
+  ) {
+    if (
+      removeChainCandidateByEndpoint(
+        cells,
+        {
+          positions: [position1],
+          digit: digit2,
+        },
+        {
+          positions: [position2],
+          digit: digit2,
+        }
+      )
+    ) {
+      return [true, ''];
+    }
+  }
+  return [false, '不是有效的W-Wings'];
 }

@@ -28,7 +28,14 @@ import {
   fillGroupedDigitsInRow,
   fillLastCandidate,
 } from '../sudoku/fill';
-import { buildChain, buildXChain, removeCandidatesByChains } from '../sudoku/link';
+import {
+  buildChain,
+  buildXChain,
+  removeCandidatesByChains,
+  WWingsInBox,
+  WWingsInCol,
+  WWingsInRow,
+} from '../sudoku/link';
 
 // ============================================================================
 // 自动填充命令
@@ -157,7 +164,6 @@ class FillLastDigitInRowCommand extends BaseCommand {
     if (!changed) {
       return this.error('没有格子被填充');
     }
-    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -208,7 +214,6 @@ class FillLastDigitInColCommand extends BaseCommand {
     if (!changed) {
       return this.error('没有格子被填充');
     }
-    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -314,13 +319,12 @@ class XChainCommand extends BaseCommand {
     }
     const [links, msg] = buildXChain(cells, positions, digit);
     if (msg.length > 0) {
-      return this.error(msg);
+      return intermediate({ ...schema, cells });
     }
     const [changed, msg2] = removeCandidatesByChains(cells, links);
     if (!changed) {
-      return this.error(msg2);
+      return intermediate({ ...schema, cells });
     }
-    cleanAllCellsSelected(cells);
     return ok({ ...schema, cells });
   }
 }
@@ -392,7 +396,248 @@ class GroupedXChainCommand extends BaseCommand {
     if (!changed) {
       return this.error(msg2);
     }
+    return ok({ ...schema, cells });
+  }
+}
+
+class WWingsInRowCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'wwingsinrow',
+      aliases: ['wwr'],
+      category: 'fill',
+      description: 'W翼（行）',
+      args: [
+        {
+          type: 'digit',
+          name: 'digit',
+          description: '数',
+          repeatable: false,
+        },
+        {
+          type: 'row',
+          name: 'row',
+          description: '行',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos1',
+          description: '位置1',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos2',
+          description: '位置2',
+          repeatable: false,
+        },
+      ],
+      examples: ['wwr <digit> <row> 12 56'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    const digit = toDigit(args[0]);
+    cleanAllCellsHighlighted(cells);
+    setDigitHighlighted(cells, digit);
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
     cleanAllCellsSelected(cells);
+    const row = toRow(args[1]);
+    setRowSelected(cells, row);
+    if (args.length === 2) {
+      return intermediate({ ...schema, cells });
+    }
+    const row1 = toRow(args[2][0]);
+    if (args[2].length === 1) {
+      setRowSelected(cells, row1);
+      return intermediate({ ...schema, cells });
+    }
+    const col1 = toCol(args[2][1]);
+    setCellSelected(cells[row1][col1]);
+    if (args.length === 3) {
+      return intermediate({ ...schema, cells });
+    }
+    const row2 = toRow(args[3][0]);
+    if (args[3].length === 1) {
+      setRowSelected(cells, row2);
+      return intermediate({ ...schema, cells });
+    }
+    const col2 = toCol(args[3][1]);
+    setCellSelected(cells[row2][col2]);
+    const position1: Position = { row: row1, col: col1, box: getBoxIndex(row1, col1) };
+    const position2: Position = { row: row2, col: col2, box: getBoxIndex(row2, col2) };
+    const [isSuccess, msg] = WWingsInRow(cells, digit, row, position1, position2);
+    if (!isSuccess) {
+      return this.error(msg);
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
+class WWingsInColCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'wwingsincol',
+      aliases: ['wwc'],
+      category: 'fill',
+      description: 'W翼（列）',
+      args: [
+        {
+          type: 'digit',
+          name: 'digit',
+          description: '数',
+          repeatable: false,
+        },
+        {
+          type: 'col',
+          name: 'col',
+          description: '列',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos1',
+          description: '位置1',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos2',
+          description: '位置2',
+          repeatable: false,
+        },
+      ],
+      examples: ['wwc <digit> <col> 12 56'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    const digit = toDigit(args[0]);
+    cleanAllCellsHighlighted(cells);
+    setDigitHighlighted(cells, digit);
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
+    cleanAllCellsSelected(cells);
+    const col = toCol(args[1]);
+    setColSelected(cells, col);
+    if (args.length === 2) {
+      return intermediate({ ...schema, cells });
+    }
+    const row1 = toRow(args[2][0]);
+    if (args[2].length === 1) {
+      setRowSelected(cells, row1);
+      return intermediate({ ...schema, cells });
+    }
+    const col1 = toCol(args[2][1]);
+    setCellSelected(cells[row1][col1]);
+    if (args.length === 3) {
+      return intermediate({ ...schema, cells });
+    }
+    const row2 = toRow(args[3][0]);
+    if (args[3].length === 1) {
+      setRowSelected(cells, row2);
+      return intermediate({ ...schema, cells });
+    }
+    const col2 = toCol(args[3][1]);
+    setCellSelected(cells[row2][col2]);
+    const position1: Position = { row: row1, col: col1, box: getBoxIndex(row1, col1) };
+    const position2: Position = { row: row2, col: col2, box: getBoxIndex(row2, col2) };
+    const [isSuccess, msg] = WWingsInCol(cells, digit, col, position1, position2);
+    if (!isSuccess) {
+      return this.error(msg);
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
+class WWingsInBoxCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'wwingsinbox',
+      aliases: ['wwb'],
+      category: 'fill',
+      description: 'W翼（框）',
+      args: [
+        {
+          type: 'digit',
+          name: 'digit',
+          description: '数',
+          repeatable: false,
+        },
+        {
+          type: 'box',
+          name: 'box',
+          description: '框',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos1',
+          description: '位置1',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'pos2',
+          description: '位置2',
+          repeatable: false,
+        },
+      ],
+      examples: ['wwb <digit> <box> 12 56'],
+    });
+  }
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    const digit = toDigit(args[0]);
+    cleanAllCellsHighlighted(cells);
+    setDigitHighlighted(cells, digit);
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
+    cleanAllCellsSelected(cells);
+    const box = toBox(args[1]);
+    setBoxSelected(cells, box);
+    if (args.length === 2) {
+      return intermediate({ ...schema, cells });
+    }
+    const row1 = toRow(args[2][0]);
+    if (args[2].length === 1) {
+      setRowSelected(cells, row1);
+      return intermediate({ ...schema, cells });
+    }
+    const col1 = toCol(args[2][1]);
+    setCellSelected(cells[row1][col1]);
+    if (args.length === 3) {
+      return intermediate({ ...schema, cells });
+    }
+    const row2 = toRow(args[3][0]);
+    if (args[3].length === 1) {
+      setRowSelected(cells, row2);
+      return intermediate({ ...schema, cells });
+    }
+    const col2 = toCol(args[3][1]);
+    setCellSelected(cells[row2][col2]);
+    const position1: Position = { row: row1, col: col1, box: getBoxIndex(row1, col1) };
+    const position2: Position = { row: row2, col: col2, box: getBoxIndex(row2, col2) };
+    const [isSuccess, msg] = WWingsInBox(cells, digit, box, position1, position2);
+    if (!isSuccess) {
+      return this.error(msg);
+    }
     return ok({ ...schema, cells });
   }
 }
@@ -408,6 +653,9 @@ const fillLastDigitInColCmd = new FillLastDigitInColCommand();
 const fillLastDigitInBoxCmd = new FillLastDigitInBoxCommand();
 const xChainCmd = new XChainCommand();
 const groupXChainCmd = new GroupedXChainCommand();
+const wWingsInRowCmd = new WWingsInRowCommand();
+const wWingsInColCmd = new WWingsInColCommand();
+const wWingsInBoxCmd = new WWingsInBoxCommand();
 
 export {
   fillLastCandidateAutoCmd,
@@ -417,6 +665,9 @@ export {
   fillLastDigitInBoxCmd,
   xChainCmd,
   groupXChainCmd,
+  wWingsInRowCmd,
+  wWingsInColCmd,
+  wWingsInBoxCmd,
 };
 
 export const fillCommands = {
@@ -447,5 +698,17 @@ export const fillCommands = {
   [groupXChainCmd.name]: {
     meta: groupXChainCmd.getMeta(),
     handler: groupXChainCmd.handle.bind(groupXChainCmd),
+  },
+  [wWingsInRowCmd.name]: {
+    meta: wWingsInRowCmd.getMeta(),
+    handler: wWingsInRowCmd.handle.bind(wWingsInRowCmd),
+  },
+  [wWingsInColCmd.name]: {
+    meta: wWingsInColCmd.getMeta(),
+    handler: wWingsInColCmd.handle.bind(wWingsInColCmd),
+  },
+  [wWingsInBoxCmd.name]: {
+    meta: wWingsInBoxCmd.getMeta(),
+    handler: wWingsInBoxCmd.handle.bind(wWingsInBoxCmd),
   },
 };
