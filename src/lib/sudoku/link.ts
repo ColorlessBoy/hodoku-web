@@ -527,7 +527,6 @@ function removeChainCandidateByEndpoint(
   const commonPositions = getCommonRelatedPositions([...head.positions, ...tail.positions]);
   const digit = head.digit;
   let changed = false;
-  console.log('removeChangeCandidate same digit', head, tail, commonPositions);
   for (const position of commonPositions) {
     const cell = cells[position.row][position.col];
     if (hasCandidate(cell, head.digit)) {
@@ -961,7 +960,7 @@ export function XYWings(
   return [false, '没有有效的候选数被删除'];
 }
 
-export function WeakXYWings(
+export function XYZWings(
   cells: Cell[][],
   position1: Position,
   position2: Position,
@@ -1007,7 +1006,9 @@ export function WeakXYWings(
   const relatedPositions2 = getRelatedPositions(position2.row, position2.col);
   const relatedPositions3 = getRelatedPositions(position3.row, position3.col);
   const relatedPositions = relatedPositions1.filter(
-    (pos) => relatedPositions2.some(p => p.row === pos.row && p.col === pos.col) && relatedPositions3.some(p => p.row === pos.row && p.col === pos.col)
+    (pos) =>
+      relatedPositions2.some((p) => p.row === pos.row && p.col === pos.col) &&
+      relatedPositions3.some((p) => p.row === pos.row && p.col === pos.col)
   );
   if (isRelated12 && isRelated13 && isRelated23) {
     // naked triple
@@ -1034,7 +1035,7 @@ export function WeakXYWings(
       wingCells[0].candidates?.some((c2) => c2.digit === c.digit) &&
       wingCells[1].candidates?.some((c2) => c2.digit === c.digit)
   )[0].digit;
-  console.log('WeakXyWings', {digit, relatedPositions})
+  console.log('WeakXyWings', { digit, relatedPositions });
   if (relatedPositions.length >= 0) {
     let changed = false;
     for (const pos of relatedPositions) {
@@ -1049,4 +1050,86 @@ export function WeakXYWings(
     }
   }
   return [false, 'Weak-XY-Wings 没有有效的候选数被删除'];
+}
+
+export function isALS(cells: Cell[][], positions: Position[]): boolean {
+  if (positions.length === 0) {
+    return false;
+  }
+  const alsCells = positions.map((pos) => cells[pos.row][pos.col]);
+  if (!alsCells.every((cell) => cell.candidates?.length > 0)) {
+    // 都需要有候选数
+    return false;
+  }
+  const rows = new Set(positions.map((pos) => pos.row));
+  const cols = new Set(positions.map((pos) => pos.col));
+  const boxes = new Set(positions.map((pos) => pos.box));
+  if (rows.size !== 1 && cols.size !== 1 && boxes.size !== 1) {
+    // 所有节点都需要在同一个作用域内，也就是弱相关
+    return false;
+  }
+  const alsCandidates = new Set(alsCells.flatMap((cell) => cell.candidates!.map((c) => c.digit)));
+  if (alsCandidates.size === positions.length + 1) {
+    return true;
+  }
+  return false;
+}
+
+export function WXYZWings(
+  cells: Cell[][],
+  xz: Position, // xy节点
+  als: Position[] // 其他als节点(与枢纽节点组成als)
+): [boolean, string] {
+  if (cells[xz.row][xz.col].candidates?.length !== 2) {
+    return [false, 'xz节点不是2个候选数'];
+  }
+  if (!isALS(cells, als)) {
+    return [false, `${als}没有组成ALS(Almost Locked Set)`];
+  }
+  const relatedPoses = als.filter((pos) => isRelated(xz, pos));
+  const unRelatedPoses = als.filter((pos) => !isRelated(xz, pos));
+  if (relatedPoses.length + unRelatedPoses.length !== als.length) {
+    return [false, 'xz节点需要不在als中'];
+  }
+  if (relatedPoses.length === 0) {
+    return [false, 'xz节点需要至少有一个关联的als节点'];
+  }
+  if (unRelatedPoses.length === 0) {
+    return [false, 'xz节点需要至少有一个不关联的als节点'];
+  }
+  let sameDigits = cells[xz.row][xz.col].candidates.map((c) => c.digit);
+  for (const pos of relatedPoses) {
+    sameDigits = sameDigits.filter((digit) => hasCandidate(cells[pos.row][pos.col], digit));
+    if (sameDigits.length === 0) {
+      return [false, 'xz节点需要有一个关联的als节点有候选数'];
+    }
+  }
+  if (sameDigits.length !== 1) {
+    return [false, 'xz节点需要有一个候选数和als节点相同'];
+  }
+  const sameDigit = sameDigits[0];
+  for (const pos of unRelatedPoses) {
+    if (cells[pos.row][pos.col].candidates.some((c) => c.digit === sameDigit)) {
+      return [false, `xz节点的候选数${sameDigit}不是RCC`];
+    }
+  }
+  const diffDigit = cells[xz.row][xz.col].candidates.find((c) => c.digit !== sameDigit)?.digit;
+  let sameCandidateInUnRelatedPoses: Position[] = [];
+  for (const pos of unRelatedPoses) {
+    if (cells[pos.row][pos.col].candidates.some((c) => c.digit === diffDigit)) {
+      sameCandidateInUnRelatedPoses.push(pos);
+    }
+  }
+  if (sameCandidateInUnRelatedPoses.length === 0) {
+    return [false, `xz 的候选数 ${diffDigit} 没有出现在非关联的翼中`];
+  }
+  const [isSuccess, msg] = removeChainCandidateByEndpoint(
+    cells,
+    { positions: [xz], digit: diffDigit },
+    { positions: sameCandidateInUnRelatedPoses, digit: diffDigit }
+  );
+  if (!isSuccess) {
+    return [false, msg];
+  }
+  return [true, ''];
 }

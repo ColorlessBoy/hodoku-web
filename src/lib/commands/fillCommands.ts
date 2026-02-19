@@ -32,11 +32,12 @@ import {
   buildChain,
   buildXChain,
   removeCandidatesByChains,
-  WeakXYWings,
+  XYZWings,
   WWingsInBox,
   WWingsInCol,
   WWingsInRow,
   XYWings,
+  WXYZWings,
 } from '../sudoku/link';
 
 // ============================================================================
@@ -405,7 +406,7 @@ class GroupedXChainCommand extends BaseCommand {
 class WWingsInRowCommand extends BaseCommand {
   constructor() {
     super({
-      name: 'wwingsinrow',
+      name: 'wwingrow',
       aliases: ['wwr'],
       category: 'fill',
       description: 'W翼（行）',
@@ -486,7 +487,7 @@ class WWingsInRowCommand extends BaseCommand {
 class WWingsInColCommand extends BaseCommand {
   constructor() {
     super({
-      name: 'wwingsincol',
+      name: 'wwingcol',
       aliases: ['wwc'],
       category: 'fill',
       description: 'W翼（列）',
@@ -567,7 +568,7 @@ class WWingsInColCommand extends BaseCommand {
 class WWingsInBoxCommand extends BaseCommand {
   constructor() {
     super({
-      name: 'wwingsinbox',
+      name: 'wwingsbox',
       aliases: ['wwb'],
       category: 'fill',
       description: 'W翼（框）',
@@ -648,7 +649,7 @@ class XYWingsCommand extends BaseCommand {
   constructor() {
     super({
       name: 'xywing',
-      aliases: ['xyw'],
+      aliases: ['xy'],
       category: 'fill',
       description: 'XY翼',
       args: [
@@ -720,11 +721,11 @@ class XYWingsCommand extends BaseCommand {
   }
 }
 
-class WeakXYWingsCommand extends BaseCommand {
+class XYZWingsCommand extends BaseCommand {
   constructor() {
     super({
-      name: 'weakxywing',
-      aliases: ['wxyw'],
+      name: 'xyzwing',
+      aliases: ['xyz'],
       category: 'fill',
       description: '弱化XY翼',
       args: [
@@ -747,7 +748,7 @@ class WeakXYWingsCommand extends BaseCommand {
           repeatable: false,
         },
       ],
-      examples: ['wxyw 12 27 74'],
+      examples: ['xyzw 12 27 74'],
     });
   }
   execute(schema: SudokuSchema, args: string[]): CmdResult {
@@ -783,7 +784,7 @@ class WeakXYWingsCommand extends BaseCommand {
     }
     const zcol = toCol(args[2][1]);
     setCellSelected(cells[zrow][zcol]);
-    const [isSuccess, msg] = WeakXYWings(
+    const [isSuccess, msg] = XYZWings(
       cells,
       { row: xrow, col: xcol, box: getBoxIndex(xrow, xcol) },
       { row: yrow, col: ycol, box: getBoxIndex(yrow, ycol) },
@@ -791,6 +792,72 @@ class WeakXYWingsCommand extends BaseCommand {
     );
     if (!isSuccess) {
       return this.error(msg);
+    }
+    return ok({ ...schema, cells });
+  }
+}
+
+class WXYZWingsCommand extends BaseCommand {
+  constructor() {
+    super({
+      name: 'wxyzwing',
+      aliases: ['wxyz'],
+      category: 'fill',
+      description: 'WXYZ翼',
+      args: [
+        {
+          type: 'pos',
+          name: 'xz',
+          description: '行+列',
+          repeatable: false,
+        },
+        {
+          type: 'pos',
+          name: 'positions',
+          description: '行+列',
+          repeatable: true,
+        },
+      ],
+      examples: ['wxyzw 12 27 74 89'],
+    });
+  }
+
+  execute(schema: SudokuSchema, args: string[]): CmdResult {
+    const cells = cloneCells(schema.cells);
+    if (args.length === 0) {
+      return this.error();
+    }
+    cleanAllCellsSelected(cells);
+    const xzrow = toRow(args[0][0]);
+    if (args[0].length === 1) {
+      setRowSelected(cells, xzrow);
+      return intermediate({ ...schema, cells });
+    }
+    const xzcol = toCol(args[0][1]);
+    setCellSelected(cells[xzrow][xzcol]);
+    const xz = { row: xzrow, col: xzcol, box: getBoxIndex(xzrow, xzcol) };
+    if (args.length === 1) {
+      return intermediate({ ...schema, cells });
+    }
+    console.log('WXYZWingsCommand', args);
+    const positions: Position[] = [];
+    for (const arg of args.slice(1)) {
+      console.log('WXYZWingsCommand', arg);
+      const r = toRow(arg[0]);
+      if (arg.length === 1) {
+        setRowSelected(cells, r);
+        return intermediate({ ...schema, cells });
+      }
+      const c = toCol(arg[1]);
+      setCellSelected(cells[r][c]);
+      positions.push({ row: r, col: c, box: getBoxIndex(r, c) });
+    }
+    if (positions.length === 2) {
+      return intermediate({ ...schema, cells });
+    }
+    const [isSuccess, msg] = WXYZWings(cells, xz, positions);
+    if (!isSuccess) {
+      return intermediate({ ...schema, cells }, msg);
     }
     return ok({ ...schema, cells });
   }
@@ -811,7 +878,8 @@ const wWingsInRowCmd = new WWingsInRowCommand();
 const wWingsInColCmd = new WWingsInColCommand();
 const wWingsInBoxCmd = new WWingsInBoxCommand();
 const xyWingCmd = new XYWingsCommand();
-const weakXYWingCmd = new WeakXYWingsCommand();
+const XYZWingCmd = new XYZWingsCommand();
+const WXYZWingCmd = new WXYZWingsCommand();
 
 export {
   fillLastCandidateAutoCmd,
@@ -825,7 +893,8 @@ export {
   wWingsInColCmd,
   wWingsInBoxCmd,
   xyWingCmd,
-  weakXYWingCmd,
+  XYZWingCmd,
+  WXYZWingCmd,
 };
 
 export const fillCommands = {
@@ -873,8 +942,12 @@ export const fillCommands = {
     meta: xyWingCmd.getMeta(),
     handler: xyWingCmd.handle.bind(xyWingCmd),
   },
-  [weakXYWingCmd.name]: {
-    meta: weakXYWingCmd.getMeta(),
-    handler: weakXYWingCmd.handle.bind(weakXYWingCmd),
+  [XYZWingCmd.name]: {
+    meta: XYZWingCmd.getMeta(),
+    handler: XYZWingCmd.handle.bind(XYZWingCmd),
+  },
+  [WXYZWingCmd.name]: {
+    meta: WXYZWingCmd.getMeta(),
+    handler: WXYZWingCmd.handle.bind(WXYZWingCmd),
   },
 };
