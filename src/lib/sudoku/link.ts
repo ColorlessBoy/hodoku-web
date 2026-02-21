@@ -1114,7 +1114,7 @@ export function WXYZWings(
     }
   }
   const diffDigit = cells[xz.row][xz.col].candidates.find((c) => c.digit !== sameDigit)?.digit;
-  let sameCandidateInUnRelatedPoses: Position[] = [];
+  const sameCandidateInUnRelatedPoses: Position[] = [];
   for (const pos of unRelatedPoses) {
     if (cells[pos.row][pos.col].candidates.some((c) => c.digit === diffDigit)) {
       sameCandidateInUnRelatedPoses.push(pos);
