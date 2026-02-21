@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { SudokuGrid } from './SudokuGrid';
 import { CommandPad } from './CommandPad';
 import { useSudokuState } from '@/hooks/useSudokuState';
@@ -10,6 +10,12 @@ export const SudokuApp: React.FC = () => {
   const [selectedCell, setSelectedCell] = React.useState<Position | null>(null);
   const [mode, setMode] = React.useState<'normal' | 'corner'>('normal');
   const [overlaySchema, setOverlaySchema] = React.useState<SudokuSchema | null>(null);
+
+  const size = useMemo(() => {
+    const deviceWidth = window.screen.width;
+    const deviceHeight = window.screen.height;
+    return Math.min(deviceHeight * 0.8, deviceWidth * 0.8);
+  }, []);
 
   const handleCellClick = (position: Position) => {
     setSelectedCell(position);
@@ -25,7 +31,7 @@ export const SudokuApp: React.FC = () => {
             schema={schema}
             onCellClick={handleCellClick}
             onCandidateClick={(position, digit) => {}}
-            size={Math.min(window.innerHeight - 64, window.innerWidth - 64)}
+            size={size}
             overlaySchema={overlaySchema}
           />
         </div>
