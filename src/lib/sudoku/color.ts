@@ -1,18 +1,18 @@
 import { getBoxCells } from './basic';
-import type { Candidate, Color, Cell, Digit } from './types';
-export function setCellColor(cell: Cell, color?: Color): boolean {
+import type { Candidate, Cell } from './types';
+export function setCellColor(cell: Cell, color?: number): boolean {
   const changed = cell.color !== color;
   cell.color = color;
   return changed;
 }
 
-function setCandidateColor(candidate: Candidate, color?: Color): boolean {
+function setCandidateColor(candidate: Candidate, color?: number): boolean {
   const changed = candidate.color !== color;
   candidate.color = color;
   return changed;
 }
 
-export function setCellCandidateColor(cell: Cell, digit: Digit, color?: Color): boolean {
+export function setCellCandidateColor(cell: Cell, digit: number, color?: number): boolean {
   if (!cell.candidates) {
     return false;
   }
@@ -38,35 +38,33 @@ export function cleanCellColor(cell: Cell): boolean {
   return changed;
 }
 
-export function cleanAllCellsColor(cells: Cell[][]): boolean {
+export function cleanAllCellsColor(cells: Cell[]): boolean {
   let changed = false;
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = cells[r][c];
-      if (cleanCellColor(cell)) {
-        changed = true;
-      }
+  for (const cell of cells) {
+    if (cleanCellColor(cell)) {
+      changed = true;
     }
   }
   return changed;
 }
 
 export function setRowCandidateColor(
-  cells: Cell[][],
+  cells: Cell[],
   row: number,
-  digit: Digit,
-  color?: Color
+  digit?: number,
+  color?: number
 ): boolean {
   let changed = false;
-  for (let c = 0; c < 9; c++) {
-    const cell = cells[row][c];
-    if (digit === undefined) {
-      if (setCellColor(cell, color)) {
-        changed = true;
-      }
-    } else {
-      if (setCellCandidateColor(cell, digit, color)) {
-        changed = true;
+  for (const cell of cells) {
+    if (cell.position.row === row) {
+      if (digit === undefined) {
+        if (setCellColor(cell, color)) {
+          changed = true;
+        }
+      } else {
+        if (setCellCandidateColor(cell, digit, color)) {
+          changed = true;
+        }
       }
     }
   }
@@ -74,21 +72,22 @@ export function setRowCandidateColor(
 }
 
 export function setColCandidateColor(
-  cells: Cell[][],
+  cells: Cell[],
   col: number,
-  digit: Digit,
-  color?: Color
+  digit?: number,
+  color?: number
 ): boolean {
   let changed = false;
-  for (let r = 0; r < 9; r++) {
-    const cell = cells[r][col];
-    if (digit === undefined) {
-      if (setCellColor(cell, color)) {
-        changed = true;
-      }
-    } else {
-      if (setCellCandidateColor(cell, digit, color)) {
-        changed = true;
+  for (const cell of cells) {
+    if (cell.position.col === col) {
+      if (digit === undefined) {
+        if (setCellColor(cell, color)) {
+          changed = true;
+        }
+      } else {
+        if (setCellCandidateColor(cell, digit, color)) {
+          changed = true;
+        }
       }
     }
   }
@@ -96,20 +95,22 @@ export function setColCandidateColor(
 }
 
 export function setBoxCandidateColor(
-  cells: Cell[][],
+  cells: Cell[],
   box: number,
-  digit: Digit,
-  color?: Color
+  digit?: number,
+  color?: number
 ): boolean {
   let changed = false;
-  for (const cell of getBoxCells(cells, box)) {
-    if (digit === undefined) {
-      if (setCellColor(cell, color)) {
-        changed = true;
-      }
-    } else {
-      if (setCellCandidateColor(cell, digit, color)) {
-        changed = true;
+  for (const cell of cells) {
+    if (cell.position.box === box) {
+      if (digit === undefined) {
+        if (setCellColor(cell, color)) {
+          changed = true;
+        }
+      } else {
+        if (setCellCandidateColor(cell, digit, color)) {
+          changed = true;
+        }
       }
     }
   }

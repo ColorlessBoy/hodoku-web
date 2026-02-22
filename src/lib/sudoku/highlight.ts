@@ -1,6 +1,7 @@
-import { getBoxCells, getBoxIndex, hasCandidate } from './basic';
+import { set } from 'date-fns';
+import { getRowCells, hasCandidate, hasDigit } from './basic';
 import { checkSelected } from './select';
-import type { Candidate, Cell, Digit } from './types';
+import type { Candidate, Cell } from './types';
 
 export function checkHighlighted(cell: Cell, highlighted: boolean = true): boolean {
   let isTrue = false;
@@ -22,26 +23,21 @@ export function checkHighlighted(cell: Cell, highlighted: boolean = true): boole
 function setCandidatesHighlighted(
   candidates: Candidate[] | undefined,
   highlighted: boolean = true,
-  digit?: Digit
-): boolean {
-  let changed = false;
+  digit?: number
+) {
   if (candidates?.length > 0) {
     for (const c of candidates) {
       if (c.digit === digit) {
         c.isHighlighted = highlighted;
-        if (c.isHighlighted !== highlighted) {
-          changed = true;
-        }
       }
     }
   }
-  return changed;
 }
 
 export function setCellHighlighted(
   cell: Cell,
   highlighted: boolean = true,
-  digit?: Digit
+  digit?: number
 ): boolean {
   const changed = !checkHighlighted(cell, highlighted);
   if (digit === undefined) {
@@ -69,14 +65,11 @@ export function setCellHighlighted(
   return changed;
 }
 
-function setAllCellsHighlighted(cells: Cell[][], highlighted: boolean = true): boolean {
+function setAllCellsHighlighted(cells: Cell[], highlighted: boolean = true): boolean {
   let changed = false;
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = cells[r][c];
-      if (setCellHighlighted(cell, highlighted)) {
-        changed = true;
-      }
+  for (const cell of cells) {
+    if (setCellHighlighted(cell, highlighted)) {
+      changed = true;
     }
   }
   return changed;
@@ -86,36 +79,30 @@ export function cleanCellHighlighted(cell: Cell): boolean {
   return setCellHighlighted(cell, false);
 }
 
-export function cleanAllCellsHighlighted(cells: Cell[][]): boolean {
+export function cleanAllCellsHighlighted(cells: Cell[]): boolean {
   return setAllCellsHighlighted(cells, false);
 }
 
 export function setDigitHighlighted(
-  cells: Cell[][],
-  digit: Digit,
+  cells: Cell[],
+  digit: number,
   highlighted: boolean = true,
   isJoin: boolean = false
 ): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (!(cell.digit === digit || hasCandidate(cell, digit))) {
-          if (setCellHighlighted(cell, !highlighted)) {
-            changed = true;
-          }
+    for (const cell of cells) {
+      if (!hasDigit(cell, digit)) {
+        if (setCellHighlighted(cell, !highlighted)) {
+          changed = true;
         }
       }
     }
   } else {
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (setCellHighlighted(cell, highlighted, digit)) {
-          changed = true;
-        }
+    for (const cell of cells) {
+      if (setCellHighlighted(cell, highlighted, digit)) {
+        changed = true;
       }
     }
   }
@@ -123,7 +110,7 @@ export function setDigitHighlighted(
 }
 
 export function setRowHighlighted(
-  cells: Cell[][],
+  cells: Cell[],
   row: number,
   highlighted: boolean = true,
   isJoin: boolean = false
@@ -131,20 +118,19 @@ export function setRowHighlighted(
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      if (r === row) continue;
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
+    for (const cell of cells) {
+      if (cell.position.row !== row) {
         if (setCellHighlighted(cell, !highlighted)) {
           changed = true;
         }
       }
     }
   } else {
-    for (let c = 0; c < 9; c++) {
-      const cell = cells[row][c];
-      if (setCellHighlighted(cell, highlighted)) {
-        changed = true;
+    for (const cell of cells) {
+      if (cell.position.row === row) {
+        if (setCellHighlighted(cell, highlighted)) {
+          changed = true;
+        }
       }
     }
   }
@@ -152,28 +138,26 @@ export function setRowHighlighted(
 }
 
 export function setColHighlighted(
-  cells: Cell[][],
+  cells: Cell[],
   col: number,
   highlighted: boolean = true,
   isJoin: boolean = false
 ): boolean {
   let changed = false;
   if (isJoin) {
-    // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (c === col) continue;
-        const cell = cells[r][c];
+    for (const cell of cells) {
+      if (cell.position.col !== col) {
         if (setCellHighlighted(cell, !highlighted)) {
           changed = true;
         }
       }
     }
   } else {
-    for (let row = 0; row < 9; row++) {
-      const cell = cells[row][col];
-      if (setCellHighlighted(cell, highlighted)) {
-        changed = true;
+    for (const cell of cells) {
+      if (cell.position.col === col) {
+        if (setCellHighlighted(cell, highlighted)) {
+          changed = true;
+        }
       }
     }
   }
@@ -181,7 +165,7 @@ export function setColHighlighted(
 }
 
 export function setBoxHighlighted(
-  cells: Cell[][],
+  cells: Cell[],
   box: number,
   highlighted: boolean = true,
   isJoin: boolean = false
@@ -189,19 +173,19 @@ export function setBoxHighlighted(
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (getBoxIndex(r, c) === box) continue;
-        const cell = cells[r][c];
+    for (const cell of cells) {
+      if (cell.position.box !== box) {
         if (setCellHighlighted(cell, !highlighted)) {
           changed = true;
         }
       }
     }
   } else {
-    for (const cell of getBoxCells(cells, box)) {
-      if (setCellHighlighted(cell, highlighted)) {
-        changed = true;
+    for (const cell of cells) {
+      if (cell.position.box === box) {
+        if (setCellHighlighted(cell, highlighted)) {
+          changed = true;
+        }
       }
     }
   }
@@ -209,31 +193,25 @@ export function setBoxHighlighted(
 }
 
 export function setXYHighlighted(
-  cells: Cell[][],
+  cells: Cell[],
   highlighted: boolean = true,
   isJoin: boolean = false
 ): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (cell.candidates?.length !== 2) {
-          if (setCellHighlighted(cell, !highlighted)) {
-            changed = true;
-          }
+    for (const cell of cells) {
+      if (cell.candidates?.length !== 2) {
+        if (setCellHighlighted(cell, !highlighted)) {
+          changed = true;
         }
       }
     }
   } else {
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (cell.candidates?.length === 2) {
-          if (setCellHighlighted(cell, highlighted)) {
-            changed = true;
-          }
+    for (const cell of cells) {
+      if (cell.candidates?.length === 2) {
+        if (setCellHighlighted(cell, highlighted)) {
+          changed = true;
         }
       }
     }
@@ -241,14 +219,24 @@ export function setXYHighlighted(
   return changed;
 }
 
-export function highlightSelected(cells: Cell[][]): boolean {
+export function highlightSelected(
+  cells: Cell[],
+  highlighted: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
-  cleanAllCellsHighlighted(cells);
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = cells[r][c];
-      if (checkSelected(cell, true)) {
-        if (setCellHighlighted(cell, true)) {
+  if (isJoin) {
+    for (const cell of cells) {
+      if (!checkSelected(cell)) {
+        if (setCellHighlighted(cell, !highlighted)) {
+          changed = true;
+        }
+      }
+    }
+  } else {
+    for (const cell of cells) {
+      if (checkSelected(cell)) {
+        if (setCellHighlighted(cell, highlighted)) {
           changed = true;
         }
       }

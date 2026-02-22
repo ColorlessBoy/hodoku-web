@@ -1,6 +1,6 @@
-import { getBoxCells, getBoxIndex, hasCandidate } from './basic';
+import { getBoxCells, hasCandidate, hasDigit } from './basic';
 import { checkHighlighted } from './highlight';
-import type { Candidate, Cell, Digit } from './types';
+import type { Candidate, Cell } from './types';
 
 export function checkSelected(cell: Cell, selected: boolean = true): boolean {
   let isTrue = false;
@@ -27,21 +27,18 @@ export function checkSelected(cell: Cell, selected: boolean = true): boolean {
 function setCandidatesSelected(
   candidates: Candidate[] | undefined,
   selected: boolean,
-  digit?: Digit
-): boolean {
-  let changed = false;
+  digit?: number
+) {
   if (candidates.length > 0) {
     for (const c of candidates) {
       if (c.digit === digit && c.isSelected !== selected) {
         c.isSelected = selected;
-        changed = true;
       }
     }
   }
-  return changed;
 }
 
-export function setCellSelected(cell: Cell, selected: boolean = true, digit?: Digit): boolean {
+export function setCellSelected(cell: Cell, selected: boolean = true, digit?: number): boolean {
   const changed = !checkSelected(cell, selected);
   if (digit === undefined) {
     // 只针对单元格的设置
@@ -68,14 +65,11 @@ export function setCellSelected(cell: Cell, selected: boolean = true, digit?: Di
   return changed;
 }
 
-function setAllCellsSelected(cells: Cell[][], selected: boolean): boolean {
+function setAllCellsSelected(cells: Cell[], selected: boolean): boolean {
   let changed = false;
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = cells[r][c];
-      if (setCellSelected(cell, selected)) {
-        changed = true;
-      }
+  for (const cell of cells) {
+    if (setCellSelected(cell, selected)) {
+      changed = true;
     }
   }
   return changed;
@@ -85,34 +79,30 @@ export function cleanCellSelected(cell: Cell): boolean {
   return setCellSelected(cell, false);
 }
 
-export function cleanAllCellsSelected(cells: Cell[][]): boolean {
+export function cleanAllCellsSelected(cells: Cell[]): boolean {
   return setAllCellsSelected(cells, false);
 }
 
 export function setDigitSelected(
-  cells: Cell[][],
-  digit: Digit,
+  cells: Cell[],
+  digit: number,
   selected: boolean = true,
   isJoin: boolean = false
 ): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (!(cell.digit === digit || hasCandidate(cell, digit))) {
-          if (setCellSelected(cell, !selected)) {
-            changed = true;
-          }
+    for (const cell of cells) {
+      if (!hasDigit(cell, digit)) {
+        if (setCellSelected(cell, !selected)) {
+          changed = true;
         }
       }
     }
   } else {
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (setCellSelected(cell, selected, digit)) {
+    for (const cell of cells) {
+      if (hasDigit(cell, digit)) {
+        if (setCellSelected(cell, selected)) {
           changed = true;
         }
       }
@@ -122,7 +112,7 @@ export function setDigitSelected(
 }
 
 export function setRowSelected(
-  cells: Cell[][],
+  cells: Cell[],
   row: number,
   selected: boolean = true,
   isJoin: boolean = false
@@ -130,20 +120,19 @@ export function setRowSelected(
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      if (r === row) continue;
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
+    for (const cell of cells) {
+      if (cell.position.row !== row) {
         if (setCellSelected(cell, !selected)) {
           changed = true;
         }
       }
     }
   } else {
-    for (let c = 0; c < 9; c++) {
-      const cell = cells[row][c];
-      if (setCellSelected(cell, selected)) {
-        changed = true;
+    for (const cell of cells) {
+      if (cell.position.row === row) {
+        if (setCellSelected(cell, selected)) {
+          changed = true;
+        }
       }
     }
   }
@@ -151,7 +140,7 @@ export function setRowSelected(
 }
 
 export function setColSelected(
-  cells: Cell[][],
+  cells: Cell[],
   col: number,
   selected: boolean = true,
   isJoin: boolean = false
@@ -159,20 +148,19 @@ export function setColSelected(
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (c === col) continue;
-        const cell = cells[r][c];
+    for (const cell of cells) {
+      if (cell.position.col !== col) {
         if (setCellSelected(cell, !selected)) {
           changed = true;
         }
       }
     }
   } else {
-    for (let row = 0; row < 9; row++) {
-      const cell = cells[row][col];
-      if (setCellSelected(cell, selected)) {
-        changed = true;
+    for (const cell of cells) {
+      if (cell.position.col === col) {
+        if (setCellSelected(cell, selected)) {
+          changed = true;
+        }
       }
     }
   }
@@ -180,7 +168,7 @@ export function setColSelected(
 }
 
 export function setBoxSelected(
-  cells: Cell[][],
+  cells: Cell[],
   box: number,
   selected: boolean = true,
   isJoin: boolean = false
@@ -188,19 +176,19 @@ export function setBoxSelected(
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (getBoxIndex(r, c) === box) continue;
-        const cell = cells[r][c];
+    for (const cell of cells) {
+      if (cell.position.box !== box) {
         if (setCellSelected(cell, !selected)) {
           changed = true;
         }
       }
     }
   } else {
-    for (const cell of getBoxCells(cells, box)) {
-      if (setCellSelected(cell, selected)) {
-        changed = true;
+    for (const cell of cells) {
+      if (cell.position.box === box) {
+        if (setCellSelected(cell, selected)) {
+          changed = true;
+        }
       }
     }
   }
@@ -208,31 +196,25 @@ export function setBoxSelected(
 }
 
 export function setXYSelected(
-  cells: Cell[][],
+  cells: Cell[],
   selected: boolean = true,
   isJoin: boolean = false
 ): boolean {
   let changed = false;
   if (isJoin) {
     // 如果是联合选择，针对未命中的格子反向设置
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (!(cell.candidates?.length === 2)) {
-          if (setCellSelected(cell, !selected)) {
-            changed = true;
-          }
+    for (const cell of cells) {
+      if (cell.candidates?.length !== 2) {
+        if (setCellSelected(cell, !selected)) {
+          changed = true;
         }
       }
     }
   } else {
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        const cell = cells[r][c];
-        if (cell.candidates?.length === 2) {
-          if (setCellSelected(cell, selected)) {
-            changed = true;
-          }
+    for (const cell of cells) {
+      if (cell.candidates?.length === 2) {
+        if (setCellSelected(cell, selected)) {
+          changed = true;
         }
       }
     }
@@ -240,13 +222,24 @@ export function setXYSelected(
   return changed;
 }
 
-export function selectHighlighted(cells: Cell[][]): boolean {
+export function selectHighlighted(
+  cells: Cell[],
+  selected: boolean = true,
+  isJoin: boolean = false
+): boolean {
   let changed = false;
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
-      const cell = cells[r][c];
-      if (checkHighlighted(cell, true)) {
-        if (setCellSelected(cell, true)) {
+  if (isJoin) {
+    for (const cell of cells) {
+      if (!checkHighlighted(cell)) {
+        if (setCellSelected(cell, !selected)) {
+          changed = true;
+        }
+      }
+    }
+  } else {
+    for (const cell of cells) {
+      if (checkHighlighted(cell)) {
+        if (setCellSelected(cell, selected)) {
           changed = true;
         }
       }

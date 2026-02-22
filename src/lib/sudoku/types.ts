@@ -1,69 +1,56 @@
-export type Color = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | null;
-export type Digit = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-
 export interface Position {
-  row: number; // 0-8
-  col: number; // 0-8
-  box: number; // 0-8
+  index: number;
+  row: number;
+  col: number;
+  box: number;
 }
 
 export interface Candidate {
-  digit: Digit;
-  color?: Color;
+  digit: number;
+  color?: number;
   hasConflict?: boolean;
   isSelected?: boolean;
+  isRemoved?: boolean; // 是否被标记为删除（用在某些解题技巧中,或者 intermediate 状态）
   isHighlighted?: boolean;
 }
 
 export interface Cell {
-  position?: Position;
+  position: Position;
 
   // 值相关
-  digit?: Digit;
+  digit?: number;
   isGiven?: boolean; // 是否是题目给定的数字
 
   // 候选数相关
   candidates?: Candidate[]; // 角注候选数
 
   // 高亮和颜色
-  color?: Color; // 单元格背景色
+  color?: number; // 单元格背景色
   isSelected?: boolean; // 是否被选中
   isHighlighted?: boolean; // 是否高亮
 
   // 错误状态
   hasConflict?: boolean; // 是否有冲突
+
+  // 是否刚刚设置数字（用在某些解题技巧中,或者 intermediate 状态）
+  isJustSet?: boolean;
 }
 
-export interface LinkEndpoint {
-  position: Position;
-  digit: Digit; // 如果是候选数链，指定候选数
+export interface LinkNode {
+  digit: number; // 如果是候选数链，指定候选数，(entry candidate if node is ALS, AUR...)
+  positions: Position[];
 }
 
 export interface Link {
-  from: LinkEndpoint;
-  to: LinkEndpoint;
+  from: LinkNode;
+  to: LinkNode;
   isStrong: boolean; // true = 强链，false = 弱链
-  color?: string; // 可选的自定义颜色
-}
-
-export interface SuperLinkEndpoint {
-  positions: Position[];
-  digit: Digit; // 如果是候选数链，指定候选数
-}
-
-export interface SuperLink {
-  from: SuperLinkEndpoint;
-  to: SuperLinkEndpoint;
-  isStrong: boolean; // true = 强链，false = 弱链
+  type: 'normal' | 'als' | 'aur'; // 链的类型，默认为 normal
   color?: string; // 可选的自定义颜色
 }
 
 export interface SudokuSchema {
   // 81个格子的渲染状态
-  cells: Cell[][];
-
-  // 链（强弱链可视化）
+  cells: Cell[];
   links: Link[];
-
-  superLinks: SuperLink[];
 }

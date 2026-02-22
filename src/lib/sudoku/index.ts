@@ -1,5 +1,5 @@
-export type { Color, Cell, Link, Digit, Position, SudokuSchema, Candidate } from './types';
-export { getBoxIndex, cloneSchema, cloneCells, createNewSchema, setCell } from './basic';
+export type { Cell, Link, Position, SudokuSchema, Candidate } from './types';
+export { cloneSchema, cloneCells, createNewSchema, setCell } from './basic';
 
 export {
   checkHighlighted,
