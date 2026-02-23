@@ -47,6 +47,7 @@ export interface Link {
   isStrong: boolean; // true = 强链，false = 弱链
   type: 'normal' | 'als' | 'aur'; // 链的类型，默认为 normal
   color?: string; // 可选的自定义颜色
+  auxiliaryPositions?: Position[] | undefined; // 辅助格子，用于 als 和 aur 链
 }
 
 export interface SudokuSchema {

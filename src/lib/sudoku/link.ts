@@ -1,7 +1,11 @@
+import { link } from 'fs';
 import {
+  cloneCells,
+  getIndexByRowCol,
   getRelatedCells,
   getRelatedPositions,
   hasCandidate,
+  isRelatedPositions,
   removeCandidate,
   removeCandidates,
 } from './basic';
@@ -33,40 +37,26 @@ function normalizeLinkNode(cells: Cell[], linkNode: LinkNode): LinkNode | undefi
   };
 }
 
+// 目前只支持普通链，暂时不支持 ALS 和 AUR 链
 // 0 不是链；1 弱链；2 强链
 export function checkLinkType(cells: Cell[], linkNode1: LinkNode, linkNode2: LinkNode): number {
   // 检查positions1和positions2是否有且只有一个位置上有digit1
-  const normPositions1 = normalizePositions(linkNode1.positions);
-  if (normPositions1.length === 0) {
+  const normNode1 = normalizeLinkNode(cells, linkNode1);
+  if (normNode1 === undefined) {
     return 0;
   }
-  for (const position of normPositions1) {
-    const cell = cells[position.index];
-    if (!hasCandidate(cell, linkNode1.digit)) {
-      return 0;
-    }
-  }
-  const normPositions2 =
-    linkNode1.digit == linkNode2.digit
-      ? normalizePositions(linkNode2.positions, normPositions1)
-      : normalizePositions(linkNode2.positions);
-  if (normPositions2.length === 0) {
+  const normNode2 = normalizeLinkNode(cells, linkNode2);
+  if (normNode2 === undefined) {
     return 0;
-  }
-  for (const position of normPositions2) {
-    const cell = cells[position.index];
-    if (!hasCandidate(cell, linkNode2.digit)) {
-      return 0;
-    }
   }
   if (linkNode1.digit !== linkNode2.digit) {
     // 异数链
     if (
-      normPositions1.length === 1 &&
-      normPositions2.length === 1 &&
-      positionEq(normPositions1[0], normPositions2[0])
+      normNode1.positions.length === 1 &&
+      normNode2.positions.length === 1 &&
+      positionEq(normNode1.positions[0], normNode2.positions[0])
     ) {
-      if (cells[normPositions1[0].index].candidates?.length === 2) {
+      if (cells[normNode1.positions[0].index].candidates?.length === 2) {
         // 是异数强链
         return 2;
       }
@@ -76,8 +66,11 @@ export function checkLinkType(cells: Cell[], linkNode1: LinkNode, linkNode2: Lin
     return 0;
   }
   // 同数链
-  const position0 = normPositions1[0];
-  const normPositions = [...normPositions1, ...normPositions2];
+  const position0 = normNode1.positions[0];
+  const normPositions = Array.from(new Set([...normNode1.positions, ...normNode2.positions]));
+  if (normNode1.positions.length + normNode2.positions.length !== normPositions.length) {
+    return 0; // 有重复位置，不是同数链
+  }
   let inSameRow = true;
   let inSameCol = true;
   let inSameBox = true;
@@ -139,45 +132,29 @@ export function checkLinkType(cells: Cell[], linkNode1: LinkNode, linkNode2: Lin
   return 0;
 }
 
-export function buildXChain(cells: Cell[], positions: Position[], digit: number): [Link[], string] {
+export function buildXChain(cells: Cell[], digit: number, positions: Position[]): [Link[], string] {
   return buildChain(
     cells,
-    positions.map((pos) => [pos]),
-    positions.map((pos) => digit)
+    positions.map((pos) => ({
+      positions: [pos],
+      digit,
+    }))
   );
 }
 
-export function buildChain(
-  cells: Cell[],
-  positions: Position[][],
-  digits: number[]
-): [Link[], string] {
-  // 检查positions和digits是否对应
-  if (positions.length !== digits.length) {
-    return [[], 'positions和digits数量不一致'];
-  }
+export function buildChain(cells: Cell[], linkNodes: LinkNode[]): [Link[], string] {
   const links: Link[] = [];
-  for (let i = 0; i < positions.length - 1; i++) {
-    const flag = checkLinkType(
-      cells,
-      { positions: positions[i], digit: digits[i] },
-      { positions: positions[i + 1], digit: digits[i + 1] }
-    );
+  for (let i = 0; i < linkNodes.length - 1; i++) {
+    const flag = checkLinkType(cells, linkNodes[i], linkNodes[i + 1]);
     if (flag === 0) {
       return [
         links,
-        `(${positions[i]}:${digits[i]})和(${positions[i + 1]}:${digits[i + 1]})不成链`,
+        `(${linkNodes[i].positions[0]}:${linkNodes[i].digit})和(${linkNodes[i + 1].positions[0]}:${linkNodes[i + 1].digit})不成链`,
       ];
     }
     links.push({
-      from: {
-        positions: positions[i],
-        digit: digits[i],
-      },
-      to: {
-        positions: positions[i + 1],
-        digit: digits[i + 1],
-      },
+      from: linkNodes[i],
+      to: linkNodes[i + 1],
       isStrong: flag === 2,
       type: 'normal',
     });
@@ -185,34 +162,22 @@ export function buildChain(
   return [links, ''];
 }
 
-export function getCommonRelatedPositions(positions: Position[]): Position[] {
+function getCommonRelatedPositions(positions: Position[]): Position[] {
   if (positions.length === 0) {
     return [];
   }
-  let commonRelatedPositionSet: Set<number> = new Set(
-    getRelatedPositions(positions[0].row, positions[0].col).map((p) => p.row * 9 + p.col)
-  );
-  for (const position of positions.slice(1)) {
-    const relations = new Set(
-      getRelatedPositions(position.row, position.col).map((pos) => pos.row * 9 + pos.col)
-    );
-    commonRelatedPositionSet = new Set(
-      [...commonRelatedPositionSet].filter((pos) => relations.has(pos))
+  let commonRelatedPositions = getRelatedPositions(positions[0]);
+  for (const position of positions) {
+    const relatedPositions = getRelatedPositions(position);
+    commonRelatedPositions = commonRelatedPositions.filter((pos) =>
+      relatedPositions.some((p) => p.index === pos.index)
     );
   }
-  return [...commonRelatedPositionSet].map((value) => ({
-    row: Math.floor(value / 9),
-    col: value % 9,
-    box: getBoxIndex(Math.floor(value / 9), value % 9),
-  }));
-}
-
-export function getCommonRelatedCells(cells: Cell[][], positions: Position[]): Cell[] {
-  return getCommonRelatedPositions(positions).map((pos) => cells[pos.row][pos.col]);
+  return commonRelatedPositions;
 }
 
 function removeChainCandidateByEndpoint(
-  cells: Cell[][],
+  cells: Cell[],
   head: LinkNode,
   tail: LinkNode
 ): [boolean, string] {
@@ -223,16 +188,18 @@ function removeChainCandidateByEndpoint(
     }
     if (positionEq(head.positions[0], tail.positions[0])) {
       // 异数链在同一格
-      const cell = cells[head.positions[0].row][head.positions[0].col];
+      const cell = cells[head.positions[0].index];
       const changed = cell.candidates?.length > 2;
-      if (!changed) {
+      if (cell.candidates?.length <= 2) {
         return [false, '异数链没有候选数可删'];
       }
-      cell.candidates?.filter((c) => c.digit !== head.digit && c.digit !== tail.digit);
+      cell.candidates = cell.candidates?.filter(
+        (c) => c.digit === head.digit || c.digit !== tail.digit
+      );
     } else {
       // 异数链不在同一格
-      const headCell = cells[head.positions[0].row][head.positions[0].col];
-      const tailCell = cells[head.positions[0].row][head.positions[0].col];
+      const headCell = cells[head.positions[0].index];
+      const tailCell = cells[tail.positions[0].index];
       let changed = false;
       if (hasCandidate(headCell, tail.digit)) {
         removeCandidate(headCell, tail.digit);
@@ -265,7 +232,7 @@ function removeChainCandidateByEndpoint(
   return [true, ''];
 }
 
-export function removeCandidatesByChains(cells: Cell[][], links: Link[]): [boolean, string] {
+export function removeCandidatesByChains(cells: Cell[], links: Link[]): [boolean, string] {
   // links is build by buildChain, so we don't need to check link's internal conditions.
   // check weak-strong condition first (external condition)
   if (links.length % 2 === 0) {
@@ -283,9 +250,30 @@ export function removeCandidatesByChains(cells: Cell[][], links: Link[]): [boole
   }
   const head = links[0].from;
   const tail = links[links.length - 1].to;
-  if (checkLinkType(cells, head.positions, head.digit, tail.positions, tail.digit) > 0) {
-    // 数环
-    // 需要找到第一个弱链
+  const headTailLinkType = checkLinkType(cells, head, tail);
+  if (headTailLinkType === 0) {
+    const [changed, msg] = removeChainCandidateByEndpoint(cells, head, tail);
+    if (!changed) {
+      return [false, msg];
+    }
+  } else if (headTailLinkType === 1) {
+    // 弱链首尾相连，形成数环
+    // 每隔一个就是一个弱链
+    let totalChanged = false;
+    for (let weakLinkIndex = 1; weakLinkIndex < links.length; weakLinkIndex += 2) {
+      const link = links[weakLinkIndex];
+      const [changed, msg] = removeChainCandidateByEndpoint(cells, link.from, link.to);
+      if (changed) {
+        totalChanged = true;
+      }
+    }
+    const [changed, _] = removeChainCandidateByEndpoint(cells, head, tail);
+    if (changed) {
+      totalChanged = true;
+    }
+    return totalChanged ? [true, ''] : [totalChanged, '形成数环但是没有移除任何候选数'];
+  } else if (headTailLinkType === 2) {
+    // 强链形成弱环
     let weakLinkIndex = -1;
     for (let i = 0; i < links.length - 1; i++) {
       if (!links[i].isStrong) {
@@ -294,326 +282,398 @@ export function removeCandidatesByChains(cells: Cell[][], links: Link[]): [boole
       }
     }
     if (weakLinkIndex === -1) {
-      // 任何链都能当做弱链
+      // 全部是强链
       let totalChanged = false;
-      let totalMsg = '';
       for (let i = 0; i < links.length - 1; i += 2) {
         const link = links[i];
-        const [changed, msg] = removeChainCandidateByEndpoint(cells, link.from, link.to);
+        const [changed, _] = removeChainCandidateByEndpoint(cells, link.from, link.to);
         if (changed) {
           totalChanged = true;
-        } else {
-          totalMsg += '\n' + msg;
         }
       }
-      return totalChanged ? [true, totalMsg] : [false, ''];
+      const [changed, _] = removeChainCandidateByEndpoint(cells, head, tail);
+      if (changed) {
+        totalChanged = true;
+      }
+      return totalChanged ? [true, ''] : [false, ''];
     } else {
       // 每隔一个就是一个弱链
       let totalChanged = false;
-      let totalMsg = '';
-      for (; weakLinkIndex < links.length - 1; weakLinkIndex += 2) {
-        const link = links[weakLinkIndex];
-        const [changed, msg] = removeChainCandidateByEndpoint(cells, link.from, link.to);
+      if (weakLinkIndex % 2 === 0) {
+        // 弱链在偶数位
+        for (let weakLinkIndex = 0; weakLinkIndex < links.length; weakLinkIndex += 2) {
+          const link = links[weakLinkIndex];
+          const [changed, msg] = removeChainCandidateByEndpoint(cells, link.from, link.to);
+          if (changed) {
+            totalChanged = true;
+          }
+        }
+      } else {
+        // 弱链在奇数位
+        for (let weakLinkIndex = 1; weakLinkIndex < links.length; weakLinkIndex += 2) {
+          const link = links[weakLinkIndex];
+          const [changed, msg] = removeChainCandidateByEndpoint(cells, link.from, link.to);
+          if (changed) {
+            totalChanged = true;
+          }
+        }
+        const [changed, msg] = removeChainCandidateByEndpoint(cells, head, tail);
         if (changed) {
           totalChanged = true;
-        } else {
-          totalMsg += '\n' + msg;
         }
       }
-      return totalChanged ? [true, ''] : [totalChanged, totalMsg];
+      return totalChanged ? [true, ''] : [false, '形成数环，但是没有可以删去的候选数'];
     }
-  }
-  const [changed, msg] = removeChainCandidateByEndpoint(cells, head, tail);
-  if (!changed) {
-    return [false, msg];
   }
   return [true, ''];
 }
 
-export function WWingsInRow(
-  cells: Cell[][],
-  digit: Digit,
-  row: number,
-  position1: Position,
-  position2: Position
-): [boolean, string] {
-  const cell1 = cells[position1.row][position1.col];
-  const cell2 = cells[position2.row][position2.col];
-  if (positionEq(position1, position2)) {
+export function findStrongLinkInRow(cells: Cell[], digit: number, row: number): Link | undefined {
+  const digitPositions = cells
+    .filter((cell) => cell.position.row === row && hasCandidate(cell, digit))
+    .map((c) => c.position);
+  if (digitPositions.length === 2) {
+    return {
+      from: { digit, positions: [digitPositions[0]] },
+      to: { digit, positions: [digitPositions[1]] },
+      isStrong: true,
+      type: 'normal',
+    };
+  }
+  const boxes = Array.from(new Set(digitPositions.map((p) => p.box)));
+  if (boxes.length === 2) {
+    return {
+      from: {
+        digit,
+        positions: digitPositions.filter((p) => p.box === boxes[0]),
+      },
+      to: {
+        digit,
+        positions: digitPositions.filter((p) => p.box === boxes[1]),
+      },
+      isStrong: true,
+      type: 'normal',
+    };
+  }
+  return undefined;
+}
+
+export function findStrongLinkInCol(cells: Cell[], digit: number, col: number): Link | undefined {
+  const digitPositions = cells
+    .filter((cell) => cell.position.col === col && hasCandidate(cell, digit))
+    .map((c) => c.position);
+  if (digitPositions.length < 2) {
+    return null;
+  }
+  if (digitPositions.length === 2) {
+    return {
+      from: { digit, positions: [digitPositions[0]] },
+      to: { digit, positions: [digitPositions[1]] },
+      isStrong: true,
+      type: 'normal',
+    };
+  }
+  const boxes = Array.from(new Set(digitPositions.map((p) => p.box)));
+  if (boxes.length === 2) {
+    return {
+      from: {
+        digit,
+        positions: digitPositions.filter((p) => p.box === boxes[0]),
+      },
+      to: {
+        digit,
+        positions: digitPositions.filter((p) => p.box === boxes[1]),
+      },
+      isStrong: true,
+      type: 'normal',
+    };
+  }
+  return undefined;
+}
+
+// 行信息 + 列信息，-1表示不在同一行列
+function isPositionsInSameLine(positions: Position[]): [number, number] {
+  if (positions.length === 0) {
+    return [-1, -1];
+  }
+  if (positions.length === 1) {
+    return [-1, -1];
+  }
+  const rowSet = new Set(positions.map((p) => p.row));
+  const colSet = new Set(positions.map((p) => p.col));
+  return [
+    rowSet.size === 1 ? rowSet.values().next().value : -1,
+    colSet.size === 1 ? colSet.values().next().value : -1,
+  ];
+}
+function linkNodeToString(linkNode: LinkNode): string {
+  return `${linkNode.digit} ${linkNode.positions.map((p) => p.index).join(' ')}`;
+}
+function linkToString(link: Link): string {
+  return `${linkNodeToString(link.from)};${linkNodeToString(link.to)}`;
+}
+function removeDuplicateLink(links: Link[]): Link[] {
+  const linkSet = new Set<string>();
+  const result: Link[] = [];
+  for (const link of links) {
+    if (linkSet.has(linkToString(link))) {
+      result.push(link);
+    }
+    if (link.isStrong) {
+      linkSet.add(`${linkNodeToString(link.from)};${linkNodeToString(link.to)}`);
+      linkSet.add(`${linkNodeToString(link.to)};${linkNodeToString(link.from)}`);
+    } else {
+      linkSet.add(`${linkNodeToString(link.from)};${linkNodeToString(link.to)}`);
+    }
+  }
+  return result;
+}
+export function findStrongLinkInBox(cells: Cell[], digit: number, box: number): Link[] {
+  const digitPositions = cells
+    .filter((cell) => cell.position.box === box && hasCandidate(cell, digit))
+    .map((c) => c.position);
+  if (digitPositions.length < 2) {
+    return null;
+  }
+  if (digitPositions.length === 2) {
     return [
-      false,
-      `(${position1.row},${position1.col}) is equal to (${position2.row},${position2.col})`,
+      {
+        from: { digit, positions: [digitPositions[0]] },
+        to: { digit, positions: [digitPositions[1]] },
+        isStrong: true,
+        type: 'normal',
+      },
     ];
   }
-  if (position1.row === row) {
-    return [false, `(${position1.row},${position1.col}) should not in row ${row}`];
+  const links: Link[] = [];
+  const rows = Array.from(new Set(digitPositions.map((p) => p.row)));
+  for (const row of rows) {
+    // 去除该行，检查剩余格子是否满足 group 条件
+    const rowDigitPositions = digitPositions.filter((p) => p.row === row);
+    const remainDigitPositions = digitPositions.filter((p) => p.row !== row);
+    const [rowIndex, colIndex] = isPositionsInSameLine(remainDigitPositions);
+    if (rowIndex !== -1 || colIndex !== -1) {
+      links.push({
+        from: {
+          digit,
+          positions: rowDigitPositions,
+        },
+        to: {
+          digit,
+          positions: remainDigitPositions,
+        },
+        isStrong: true,
+        type: 'normal',
+      });
+    }
   }
-  if (position2.row === row) {
-    return [false, `(${position2.row},${position2.col}) should not in row ${row}`];
+  const cols = Array.from(new Set(digitPositions.map((p) => p.col)));
+  for (const col of cols) {
+    const rowDigitPositions = digitPositions.filter((p) => p.col === col);
+    const remainDigitPositions = digitPositions.filter((p) => p.col !== col);
+    if (isPositionsInSameLine(remainDigitPositions)) {
+      links.push({
+        from: {
+          digit,
+          positions: rowDigitPositions,
+        },
+        to: {
+          digit,
+          positions: remainDigitPositions,
+        },
+        isStrong: true,
+        type: 'normal',
+      });
+    }
+  }
+  return removeDuplicateLink(links);
+}
+export function findStrongLinkInCell(cell: Cell, digit?: number): Link {
+  if (
+    cell.candidates?.length === 2 &&
+    (digit === undefined || cell.candidates.some((c) => c.digit === digit))
+  ) {
+    let [d1, d2] = [cell.candidates[0].digit, cell.candidates[1].digit];
+    if (d1 !== digit) {
+      // digit === undefined 也没有问题
+      d2 = d1;
+      d1 = digit;
+    }
+    return {
+      from: {
+        digit: d1,
+        positions: [cell.position],
+      },
+      to: {
+        digit: d2,
+        positions: [cell.position],
+      },
+      isStrong: true,
+      type: 'normal',
+    };
+  }
+  return undefined;
+}
+
+export function findStrongLink(
+  cells: Cell[],
+  digit: number,
+  row?: number,
+  col?: number,
+  box?: number
+): Link[] {
+  const result: Link[] = [];
+  if (row !== undefined && col !== undefined) {
+    const link = findStrongLinkInCell(cells[getIndexByRowCol(row, col)], digit);
+    if (link) {
+      result.push(link);
+    }
+  } else if (row !== undefined) {
+    const link = findStrongLinkInRow(cells, digit, row);
+    if (link) {
+      result.push(link);
+    }
+    return result;
+  } else if (col !== undefined) {
+    const link = findStrongLinkInCol(cells, digit, col);
+    if (link) {
+      result.push(link);
+    }
+    return result;
+  } else if (box !== undefined) {
+    const links = findStrongLinkInBox(cells, digit, box);
+    return links;
+  }
+  return [];
+}
+
+export function chainAddStrongLinks(cells: Cell[], links: Link[], link2: Link): Link[] {
+  if (links.length === 0) {
+    throw new Error('connectStrongLinks: links is empty');
+  }
+  const head = links[0];
+  const tail = links[links.length - 1];
+  if (!head.isStrong && !tail.isStrong) {
+    throw new Error('connectStrongLinks: links (head and tail) are all not strong');
+  }
+  if (!link2.isStrong) {
+    throw new Error('connectStrongLinks: link2 is strong');
+  }
+  let linkType = checkLinkType(cells, tail.to, link2.from);
+  if (linkType > 0) {
+    return [
+      ...links,
+      { from: tail.to, to: link2.from, isStrong: linkType === 3, type: 'normal' },
+      link2,
+    ];
+  }
+  linkType = checkLinkType(cells, tail.to, link2.to);
+  if (linkType > 0) {
+    return [
+      ...links,
+      { from: tail.to, to: link2.to, isStrong: linkType === 3, type: 'normal' },
+      { ...link2, from: link2.to, to: link2.from },
+    ];
+  }
+  linkType = checkLinkType(cells, head.from, link2.to);
+  if (linkType > 0) {
+    return [
+      link2,
+      { from: link2.to, to: head.from, isStrong: linkType === 3, type: 'normal' },
+      ...links,
+    ];
+  }
+  linkType = checkLinkType(cells, head.from, link2.from);
+  if (linkType > 0) {
+    return [
+      { ...link2, from: link2.to, to: link2.from },
+      { from: link2.from, to: head.from, isStrong: linkType === 3, type: 'normal' },
+      ...links,
+    ];
+  }
+  return links;
+}
+
+export function constructWWing(
+  cells: Cell[],
+  position1: Position,
+  position2: Position,
+  digit: number,
+  row?: number,
+  col?: number,
+  box?: number
+): Link[] {
+  if (row === undefined || col === undefined || box === undefined) {
+    throw new Error('WWings: row, col and box are all undefined.');
+  }
+  const cell1 = cells[position1.index];
+  const cell2 = cells[position2.index];
+  if (positionEq(position1, position2)) {
+    throw new Error('WWings: position1 and position2 cannot be the same');
   }
   if (cell1.candidates?.length !== 2) {
-    return [false, `(${position1.row},${position1.col}) candidates length is not 2`];
+    throw new Error('WWings: cell1 candidates length is not 2');
   }
   if (cell2.candidates?.length !== 2) {
-    return [false, `(${position2.row},${position2.col}) candidates length is not 2`];
+    throw new Error('WWings: cell2 candidates length is not 2');
   }
   const unionCandidates = new Set([
     ...cell1.candidates.map((c) => c.digit),
     ...cell2.candidates.map((c) => c.digit),
   ]);
   if (unionCandidates.size !== 2) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have same candidates`,
-    ];
+    throw new Error('WWings: cell1 and cell candidates are not same.');
   }
-  if (!unionCandidates.has(digit)) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have digit ${digit}`,
-    ];
-  }
-  const relatedCells1OfDigit1 = getRelatedCells(cells, position1.row, position1.col).filter(
-    (c) => c.position.row === row && hasCandidate(c, digit)
-  );
-  const relatedCells2OfDigit1 = getRelatedCells(cells, position2.row, position2.col).filter(
-    (c) => c.position.row === row && hasCandidate(c, digit) && !relatedCells2OfDigit1.includes(c)
-  );
-
-  const digit2 = [...unionCandidates].filter((d) => d !== digit)[0];
-
-  if (
-    relatedCells1OfDigit1.length > 0 &&
-    relatedCells2OfDigit1.length > 0 &&
-    checkLinkType(
-      cells,
-      relatedCells1OfDigit1.map((c) => c.position),
-      digit,
-      relatedCells2OfDigit1.map((c) => c.position),
-      digit
-    ) === 2
-  ) {
-    if (
-      removeChainCandidateByEndpoint(
-        cells,
-        {
-          positions: [position1],
-          digit: digit2,
-        },
-        {
-          positions: [position2],
-          digit: digit2,
-        }
-      )
-    ) {
-      return [true, ''];
+  const headLink = findStrongLinkInCell(cells[position1.index]);
+  const tailLink = findStrongLinkInCell(cells[position2.index]);
+  const links = findStrongLink(cells, digit, row, col, box);
+  for (const link of links) {
+    let chain = [link];
+    chain = chainAddStrongLinks(cells, chain, headLink);
+    chain = chainAddStrongLinks(cells, chain, tailLink);
+    if (chain.length == 5) {
+      return chain;
     }
   }
-  return [false, '不是有效的W-Wings'];
+  throw new Error('Not valid w-wing.');
 }
 
-export function WWingsInCol(
-  cells: Cell[][],
-  digit: Digit,
-  col: number,
-  position1: Position,
-  position2: Position
-): [boolean, string] {
-  const cell1 = cells[position1.row][position1.col];
-  const cell2 = cells[position2.row][position2.col];
-  if (positionEq(position1, position2)) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) is equal to (${position2.row},${position2.col})`,
-    ];
-  }
-  if (position1.col === col) {
-    return [false, `(${position1.row},${position1.col}) should not in col ${col}`];
-  }
-  if (position2.col === col) {
-    return [false, `(${position2.row},${position2.col}) should not in col ${col}`];
-  }
-  if (cell1.candidates?.length !== 2) {
-    return [false, `(${position1.row},${position1.col}) candidates length is not 2`];
-  }
-  if (cell2.candidates?.length !== 2) {
-    return [false, `(${position2.row},${position2.col}) candidates length is not 2`];
-  }
-  const unionCandidates = new Set([
-    ...cell1.candidates.map((c) => c.digit),
-    ...cell2.candidates.map((c) => c.digit),
-  ]);
-  if (unionCandidates.size !== 2) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have same candidates`,
-    ];
-  }
-  if (!unionCandidates.has(digit)) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have digit ${digit}`,
-    ];
-  }
-  const relatedCells1OfDigit1 = getRelatedCells(cells, position1.row, position1.col).filter(
-    (c) => c.position.col === col && hasCandidate(c, digit)
-  );
-  const relatedCells2OfDigit1 = getRelatedCells(cells, position2.row, position2.col).filter(
-    (c) => c.position.col === col && hasCandidate(c, digit) && !relatedCells1OfDigit1.includes(c)
-  );
-
-  const digit2 = [...unionCandidates].filter((d) => d !== digit)[0];
-
-  if (
-    relatedCells1OfDigit1.length > 0 &&
-    relatedCells2OfDigit1.length > 0 &&
-    checkLinkType(
-      cells,
-      relatedCells1OfDigit1.map((c) => c.position),
-      digit,
-      relatedCells2OfDigit1.map((c) => c.position),
-      digit
-    ) === 2
-  ) {
-    if (
-      removeChainCandidateByEndpoint(
-        cells,
-        {
-          positions: [position1],
-          digit: digit2,
-        },
-        {
-          positions: [position2],
-          digit: digit2,
-        }
-      )
-    ) {
-      return [true, ''];
-    }
-  }
-  return [false, '不是有效的W-Wings'];
-}
-
-export function WWingsInBox(
-  cells: Cell[][],
-  digit: Digit,
-  box: number,
-  position1: Position,
-  position2: Position
-): [boolean, string] {
-  const cell1 = cells[position1.row][position1.col];
-  const cell2 = cells[position2.row][position2.col];
-  if (positionEq(position1, position2)) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) is equal to (${position2.row},${position2.col})`,
-    ];
-  }
-  if (position1.box === box) {
-    return [false, `(${position1.row},${position1.col}) should not in box ${box}`];
-  }
-  if (position2.box === box) {
-    return [false, `(${position2.row},${position2.col}) should not in box ${box}`];
-  }
-  if (cell1.candidates?.length !== 2) {
-    return [false, `(${position1.row},${position1.col}) candidates length is not 2`];
-  }
-  if (cell2.candidates?.length !== 2) {
-    return [false, `(${position2.row},${position2.col}) candidates length is not 2`];
-  }
-  const unionCandidates = new Set([
-    ...cell1.candidates.map((c) => c.digit),
-    ...cell2.candidates.map((c) => c.digit),
-  ]);
-  if (unionCandidates.size !== 2) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have same candidates`,
-    ];
-  }
-  if (!unionCandidates.has(digit)) {
-    return [
-      false,
-      `(${position1.row},${position1.col}) and (${position2.row},${position2.col}) should have digit ${digit}`,
-    ];
-  }
-  const relatedCells1OfDigit1 = getRelatedCells(cells, position1.row, position1.col).filter(
-    (c) => c.position.box === box && hasCandidate(c, digit)
-  );
-  const relatedCells2OfDigit1 = getRelatedCells(cells, position2.row, position2.col).filter(
-    (c) => c.position.box === box && hasCandidate(c, digit) && !relatedCells1OfDigit1.includes(c)
-  );
-
-  console.log('WWingsInBox', relatedCells1OfDigit1, relatedCells2OfDigit1);
-
-  const digit2 = [...unionCandidates].filter((d) => d !== digit)[0];
-
-  if (
-    relatedCells1OfDigit1.length > 0 &&
-    relatedCells2OfDigit1.length > 0 &&
-    checkLinkType(
-      cells,
-      relatedCells1OfDigit1.map((c) => c.position),
-      digit,
-      relatedCells2OfDigit1.map((c) => c.position),
-      digit
-    ) === 2
-  ) {
-    if (
-      removeChainCandidateByEndpoint(
-        cells,
-        {
-          positions: [position1],
-          digit: digit2,
-        },
-        {
-          positions: [position2],
-          digit: digit2,
-        }
-      )
-    ) {
-      return [true, ''];
-    }
-  }
-  return [false, '不是有效的W-Wings'];
-}
-
-export function XYWings(
-  cells: Cell[][],
+export function constructYWing(
+  cells: Cell[],
   position1: Position,
   position2: Position,
   position3: Position
-): [boolean, string] {
-  const cell1 = cells[position1.row][position1.col];
-  const cell2 = cells[position2.row][position2.col];
-  const cell3 = cells[position3.row][position3.col];
+): Link[] {
+  const cell1 = cells[position1.index];
+  const cell2 = cells[position2.index];
+  const cell3 = cells[position3.index];
   if (
     cell1.candidates?.length !== 2 ||
     cell2.candidates?.length !== 2 ||
     cell3.candidates?.length !== 2
   ) {
-    return [false, 'XYWings需要每个格子2个候选数'];
+    throw new Error('XYWings: cells must have 2 candidates');
   }
   const unionCandidates12 = new Set([
     ...cell1.candidates.map((c) => c.digit),
     ...cell2.candidates.map((c) => c.digit),
   ]);
   if (unionCandidates12.size !== 3) {
-    return [false, 'XYWings的1、2格子候选数并集必需是3个候选数'];
+    throw new Error('XYWings: unionCandidates of cell1 and cell2 must be 3');
   }
   const unionCandidates23 = new Set([
     ...cell2.candidates.map((c) => c.digit),
     ...cell3.candidates.map((c) => c.digit),
   ]);
   if (unionCandidates23.size !== 3) {
-    return [false, 'XYWings的1、3格子候选数并集必需是3个候选数'];
+    throw new Error('XYWings: unionCandidates of cell2 and cell3 must be 3');
   }
   const unionCandidates13 = new Set([
     ...cell1.candidates.map((c) => c.digit),
     ...cell3.candidates.map((c) => c.digit),
   ]);
   if (unionCandidates13.size !== 3) {
-    return [false, 'XYWings的1、3格子候选数并集必需是3个候选数'];
+    throw new Error('XYWings: unionCandidates of cell1 and cell3 must be 3');
   }
   const unionCandidates123 = new Set([
     ...cell1.candidates.map((c) => c.digit),
@@ -621,79 +681,36 @@ export function XYWings(
     ...cell3.candidates.map((c) => c.digit),
   ]);
   if (unionCandidates123.size !== 3) {
-    return [false, 'XYWings的1、2、3格子候选数并集必需是3个候选数'];
+    throw new Error('XYWings: unionCandidates of cell1, cell2 and cell3 must be 3');
   }
-  const isRelated12 = isRelated(position1, position2);
-  const isRelated23 = isRelated(position2, position3);
-  const isRelated13 = isRelated(position1, position3);
-  if (isRelated12 && isRelated23 && isRelated13) {
-    // naked triple
-    const relatedPositions1 = getRelatedPositions(position1.row, position1.col);
-    const relatedPositions2 = getRelatedPositions(position2.row, position2.col);
-    const relatedPositions3 = getRelatedPositions(position3.row, position3.col);
-    const relatedPositions = relatedPositions1.filter(
-      (pos) => relatedPositions2.includes(pos) && relatedPositions3.includes(pos)
-    );
-    if (relatedPositions.length >= 0) {
-      let changed = false;
-      for (const pos of relatedPositions) {
-        const preCnt = cells[pos.row][pos.col].candidates?.length || 0;
-        removeCandidates(cells[pos.row][pos.col], [...unionCandidates123]);
-        if (preCnt !== cells[pos.row][pos.col].candidates?.length || 0) {
-          changed = true;
-        }
-      }
-      if (changed) {
-        return [true, ''];
-      }
-    }
-    return [false, '裸三数对，没有有效的候选数被删除'];
+  const link1 = findStrongLinkInCell(cell1);
+  const link2 = findStrongLinkInCell(cell2);
+  const link3 = findStrongLinkInCell(cell3);
+  let chain = [link1];
+  chain = chainAddStrongLinks(cells, chain, link2);
+  chain = chainAddStrongLinks(cells, chain, link3);
+  if (chain.length !== 5) {
+    throw new Error('XYWings: not valid y-wing.');
   }
-  let relationShipCnt = 0;
-  if (isRelated12) {
-    relationShipCnt++;
-  }
-  if (isRelated23) {
-    relationShipCnt++;
-  }
-  if (isRelated13) {
-    relationShipCnt++;
-  }
-  if (relationShipCnt !== 2) {
-    return [false, 'XY-Wings需要有2对弱关系'];
-  }
-  let wingCell1 = cell1;
-  let wingCell2 = cell2;
-  if (!isRelated23) {
-    wingCell1 = cell3;
-  } else if (!isRelated13) {
-    wingCell2 = cell3;
-  }
-
-  const digit = wingCell1.candidates.filter((c) =>
-    wingCell2.candidates.some((c2) => c2.digit === c.digit)
-  )[0].digit;
-  if (
-    removeChainCandidateByEndpoint(
-      cells,
-      { positions: [wingCell1.position], digit },
-      { positions: [wingCell2.position], digit }
-    )
-  ) {
-    return [true, ''];
-  }
-  return [false, '没有有效的候选数被删除'];
+  return chain;
 }
 
-export function XYZWings(
-  cells: Cell[][],
+export function removeCandidateButNewCells(cells: Cell[], index: number, digit: number) {
+  const newCell = cloneCells(cells);
+  removeCandidate(newCell[index], digit);
+  return newCell;
+}
+
+// Almost Y-Wing
+export function AlmostYWings(
+  cells: Cell[],
   position1: Position,
   position2: Position,
   position3: Position
-): [boolean, string] {
-  const cell1 = cells[position1.row][position1.col];
-  const cell2 = cells[position2.row][position2.col];
-  const cell3 = cells[position3.row][position3.col];
+): Link[] | null {
+  const cell1 = cells[position1.index];
+  const cell2 = cells[position2.index];
+  const cell3 = cells[position3.index];
   const cell3s = [cell1, cell2, cell3];
   let count3 = 0;
   let rootCellIndex = -1;
@@ -708,7 +725,7 @@ export function XYZWings(
     }
   }
   if (count3 !== 1 || count2 !== 2) {
-    return [false, 'Weak-XY-Wing 需要一个格子满足3个候选数，两个格子满足2个候选数'];
+    throw new Error('Almost-Y-Wing 需要一个格子满足3个候选数，两个格子满足2个候选数');
   }
   const wingCells = cell3s.filter((_, index) => index !== rootCellIndex);
   const rootCell = cell3s[rootCellIndex];
@@ -717,71 +734,39 @@ export function XYZWings(
     ...wingCells[1].candidates!.map((c) => c.digit),
   ]);
   if (wingCandidates.size !== 3) {
-    return [false, 'Weak-XY-Wing 需要两个翼候选数并集是3个候选数'];
+    throw new Error('Almost-Y-Wing 需要两个翼候选数并集是3个候选数');
   }
   const totalCandidates = new Set([...wingCandidates, ...rootCell.candidates!.map((c) => c.digit)]);
   if (totalCandidates.size !== 3) {
-    return [false, 'Weak-XY-Wing 需要三个格子的候选数并集是3个候选数'];
+    throw new Error('Almost-Y-Wing 需要三个格子的候选数并集是3个候选数');
   }
-  console.log('WeakXYWings', { rootCell, wingCells });
-  const isRelated12 = isRelated(rootCell.position!, wingCells[0].position!);
-  const isRelated13 = isRelated(rootCell.position!, wingCells[1].position!);
-  const isRelated23 = isRelated(wingCells[0].position!, wingCells[1].position!);
-  const relatedPositions1 = getRelatedPositions(position1.row, position1.col);
-  const relatedPositions2 = getRelatedPositions(position2.row, position2.col);
-  const relatedPositions3 = getRelatedPositions(position3.row, position3.col);
-  const relatedPositions = relatedPositions1.filter(
-    (pos) =>
-      relatedPositions2.some((p) => p.row === pos.row && p.col === pos.col) &&
-      relatedPositions3.some((p) => p.row === pos.row && p.col === pos.col)
-  );
-  if (isRelated12 && isRelated13 && isRelated23) {
-    // naked triple
-    if (relatedPositions.length >= 0) {
-      let changed = false;
-      for (const pos of relatedPositions) {
-        const preCnt = cells[pos.row][pos.col].candidates?.length || 0;
-        removeCandidates(cells[pos.row][pos.col], [...totalCandidates]);
-        if (preCnt !== cells[pos.row][pos.col].candidates?.length || 0) {
-          changed = true;
-        }
-      }
-      if (changed) {
-        return [true, ''];
+  let almostDigit = -1;
+  for (const digit of totalCandidates) {
+    let cnt = 0;
+    for (const cell of cell3s) {
+      if (hasCandidate(cell, digit)) {
+        cnt++;
       }
     }
-    return [false, '裸三数对，没有有效的候选数被删除'];
-  }
-  if (!isRelated12 || !isRelated13) {
-    return [false, 'Weak-XY-Wing 需要两个翼格子分别和根节点处于弱关系'];
-  }
-  const digit = rootCell.candidates!.filter(
-    (c) =>
-      wingCells[0].candidates?.some((c2) => c2.digit === c.digit) &&
-      wingCells[1].candidates?.some((c2) => c2.digit === c.digit)
-  )[0].digit;
-  console.log('WeakXyWings', { digit, relatedPositions });
-  if (relatedPositions.length >= 0) {
-    let changed = false;
-    for (const pos of relatedPositions) {
-      const preCnt = cells[pos.row][pos.col].candidates?.length || 0;
-      removeCandidates(cells[pos.row][pos.col], [digit]);
-      if (preCnt !== cells[pos.row][pos.col].candidates?.length || 0) {
-        changed = true;
-      }
-    }
-    if (changed) {
-      return [true, ''];
+    if (cnt === 3) {
+      almostDigit = digit;
+      break;
     }
   }
-  return [false, 'Weak-XY-Wings 没有有效的候选数被删除'];
+  // 一定会有 almostDigit
+  const newCell = removeCandidateButNewCells(cells, rootCellIndex, almostDigit);
+  const links = constructYWing(newCell, position1, position2, position3);
+  if (links.length !== 5) {
+    throw new Error('Almost-Y-Wings 去掉 Almost 格子后，不成 Y-Wing');
+  }
+  return links;
 }
 
-export function isALS(cells: Cell[][], positions: Position[]): boolean {
+export function isALS(cells: Cell[], positions: Position[]): boolean {
   if (positions.length === 0) {
     return false;
   }
-  const alsCells = positions.map((pos) => cells[pos.row][pos.col]);
+  const alsCells = positions.map((pos) => cells[pos.index]);
   if (!alsCells.every((cell) => cell.candidates?.length > 0)) {
     // 都需要有候选数
     return false;
@@ -801,7 +786,7 @@ export function isALS(cells: Cell[][], positions: Position[]): boolean {
 }
 
 export function WXYZWings(
-  cells: Cell[][],
+  cells: Cell[],
   xz: Position, // xy节点
   als: Position[] // 其他als节点(与枢纽节点组成als)
 ): [boolean, string] {
@@ -811,8 +796,8 @@ export function WXYZWings(
   if (!isALS(cells, als)) {
     return [false, `${als}没有组成ALS(Almost Locked Set)`];
   }
-  const relatedPoses = als.filter((pos) => isRelated(xz, pos));
-  const unRelatedPoses = als.filter((pos) => !isRelated(xz, pos));
+  const relatedPoses = als.filter((pos) => isRelatedPositions(xz, pos));
+  const unRelatedPoses = als.filter((pos) => !isRelatedPositions(xz, pos));
   if (relatedPoses.length + unRelatedPoses.length !== als.length) {
     return [false, 'xz节点需要不在als中'];
   }
