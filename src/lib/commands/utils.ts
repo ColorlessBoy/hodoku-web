@@ -4,7 +4,7 @@
  * 提供命令处理中常用的工具函数
  */
 
-import type { Digit, SudokuSchema, Color } from '@/lib/sudoku';
+import type { SudokuSchema } from '@/lib/sudoku';
 import type { CmdResult } from './types';
 
 // ============================================================================
@@ -28,7 +28,6 @@ export const toOneIndice = (arg: string): number => clampRC(Number(arg));
 export const toRow = (arg: string): number => toZeroIndice(arg);
 export const toCol = toRow;
 export const toBox = toRow;
-export const toDigit = (arg: string): Digit => clampRC(Number(arg)) as Digit;
 export const toZeroIndices = (args: string[]): number[] =>
   args.map((arg) => toZeroIdx(Number(arg)));
 export const toRow0 = (arg: string): number => {
@@ -37,10 +36,6 @@ export const toRow0 = (arg: string): number => {
 };
 export const toCol0 = toRow0;
 export const toBox0 = toRow0;
-export const toColor0 = (arg: string): Color | undefined => {
-  if (arg.length > 0 && toNumber(arg[0]) === 0) return undefined;
-  return clampRC(Number(arg)) as Color;
-};
 
 // ============================================================================
 // 结果构造器

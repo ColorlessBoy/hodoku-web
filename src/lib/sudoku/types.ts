@@ -17,12 +17,12 @@ export interface Candidate {
 export interface Cell {
   position: Position;
 
+  // 候选数相关
+  candidates: Candidate[]; // 角注候选数，默认九个
+
   // 值相关
   digit?: number;
   isGiven?: boolean; // 是否是题目给定的数字
-
-  // 候选数相关
-  candidates?: Candidate[]; // 角注候选数
 
   // 高亮和颜色
   color?: number; // 单元格背景色
@@ -31,9 +31,6 @@ export interface Cell {
 
   // 错误状态
   hasConflict?: boolean; // 是否有冲突
-
-  // 是否刚刚设置数字（用在某些解题技巧中,或者 intermediate 状态）
-  isJustSet?: boolean;
 }
 
 export interface LinkNode {

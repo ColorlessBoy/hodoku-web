@@ -1,11 +1,9 @@
-import { set } from 'date-fns';
 import {
   getBoxByIndex,
   getColByIndex,
   getIndexByRowCol,
   getRowByIndex,
   hasCandidate,
-  hasDigit,
   removeCandidate,
   setCell,
 } from './basic';

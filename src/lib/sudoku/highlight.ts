@@ -1,5 +1,4 @@
-import { set } from 'date-fns';
-import { getRowCells, hasCandidate, hasDigit } from './basic';
+import { hasCandidate, hasDigit } from './basic';
 import { checkSelected } from './select';
 import type { Candidate, Cell } from './types';
 

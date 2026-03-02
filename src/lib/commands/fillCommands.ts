@@ -19,26 +19,9 @@ import {
   cleanAllCellsHighlighted,
   setDigitHighlighted,
 } from '@/lib/sudoku';
-import { ok, intermediate, toDigit, toRow, toCol, toBox } from './utils';
+import { ok, intermediate, toRow, toCol, toBox } from './utils';
 import { BaseCommand } from './Command';
-import { cloneCells, getBoxIndex } from '../sudoku/basic';
-import {
-  fillGroupedDigitsInBox,
-  fillGroupedDigitsInCol,
-  fillGroupedDigitsInRow,
-  fillLastCandidate,
-} from '../sudoku/fill';
-import {
-  buildChain,
-  buildXChain,
-  removeCandidatesByChains,
-  XYZWings,
-  WWingsInBox,
-  WWingsInCol,
-  WWingsInRow,
-  XYWings,
-  WXYZWings,
-} from '../sudoku/link';
+import { cloneCells } from '../sudoku/basic';
 
 // ============================================================================
 // 自动填充命令
